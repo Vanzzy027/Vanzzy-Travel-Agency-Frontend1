@@ -1,4 +1,4 @@
-// pages/UserVehiclesPage.tsx (or wherever you keep it)
+
 import React, { useState, useMemo } from 'react';
 import { useGetAvailableVehiclesQuery } from '../features/api/VehicleAPI';
 import VehicleCard from '../components/VehicleCard';
@@ -11,7 +11,7 @@ const UserVehiclesPage: React.FC = () => {
 
   // This is now guaranteed to be an array (or undefined while loading)
   const { data: vehicles = [], isLoading, error } = useGetAvailableVehiclesQuery();
-
+  console.log("REAL API DATA:", vehicles);
   // Client-side filtering with useMemo for performance
   const filteredVehicles = useMemo(() => {
     return vehicles.filter((vehicle) => {

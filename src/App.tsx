@@ -1,80 +1,220 @@
+import { RouterProvider, createBrowserRouter, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
-import React from 'react';
-import { RouterProvider, createBrowserRouter, Outlet } from 'react-router-dom';
-//import Header from './components/Header';
-import Footer from './components/Footer';
-import DashboardLayout from './layouts/DashboardLayout'; 
-import Home from '../src/pages/home';
+// --- LAYOUTS ---
+import PublicLayout from './layouts/PublicLayout';
+import UserDashboardLayout from './Userdashboarddesign/UserDashboardLayout';
+import AdminDashboardLayout from './Userdashboarddesign/AdminDashboardLayout';
+import SuperAdminDashboardLayout from './Userdashboarddesign/SuperAdminDashboardLayout';
+
+// --- PAGES ---
+import Home from './pages/home';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import DashboardHome from './pages/DashboardHome';
-import Navbar from './components/Navbar';
-import UserDashboardLayout from './Userdashboarddesign/UserDashboardLayout';
+
+// User Pages
 import UserDashboardHome from './pages/UserPage/MyDashboard';
 import UserVehiclesPage from './pages/UserPage/VehiclesPage';
+import UserBookingsPage from './pages/UserPage/My Bookings'; 
 
-// Layout for Public Pages 
-function PublicLayout() {
-    return (
-        <div className="min-h-screen flex flex-col bg-[#E9E6DD]">
+// Admin Pages
+import AdminOverview from './pages/AdminPage/AdminDashboard';
+import FleetManagement from './pages/AdminPage/FleetManagement';
+import BookingsManagement from './pages/AdminPage/BookingsManagement';
+import CustomerManagement from './pages/AdminPage/CustomerManagement';
+
+// --- AUTH GUARD ---
+const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+  const { token, user } = useSelector((state: any) => state.auth) || 
+                          { token: localStorage.getItem('token'), user: JSON.parse(localStorage.getItem('user') || '{}') };
+
+  if (!token) return <Navigate to="/login" replace />;
   
-            <main className="flex-grow">
-                <Outlet />
-            </main>
-            <Footer />
-        </div>
-    );
-}
+  if (allowedRoles && !allowedRoles.includes(user?.role)) {
+    if (user.role === 'user') return <Navigate to="/UserDashboard" replace />;
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
+    return <Navigate to="/unauthorized" replace />;
+  }
+  return <>{children}</>;
+};
 
-
-
-// Main App Component
 function App() {
-    const router = createBrowserRouter([
-        // Public Routes
-        {
-            path: '/',
-            element: <PublicLayout />,
-            children: [
-                { index: true, element: <Home /> },
-                { path: 'register', element: <Register /> },
-                { path: 'login', element: <Login /> },
-            ],
-        },
+  const router = createBrowserRouter([
+    // 1. PUBLIC ROUTES
+    {
+      path: '/',
+      element: <PublicLayout />,
+      children: [
+        { index: true, element: <Home /> },
+        { path: 'login', element: <Login /> },
+        { path: 'register', element: <Register /> },
+      ],
+    },
 
-{
-  path: '/UserDashboard',
-  element: <UserDashboardLayout />,  
-  children: [
-    { index: true, element: <UserDashboardHome /> },
-    { path: 'vehicles', element: <UserVehiclesPage /> },
-    { path: 'bookings', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">My Bookings</h1></div> },
-    { path: 'payments', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Payment History</h1></div> },
-    { path: 'messages', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Messages</h1></div> },
-    { path: 'emergency', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Emergency Support</h1></div> },
-    { path: 'settings', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Settings</h1></div> },
-  ],
-},
+    // 2. USER DASHBOARD
+    {
+      path: '/UserDashboard', // <--- PARENT PATH
+      element: (
+        <ProtectedRoute allowedRoles={['user']}>
+          <UserDashboardLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        { index: true, element: <UserDashboardHome /> },
+        { path: 'vehicles', element: <UserVehiclesPage /> },
+        { path: 'my-bookings', element: <UserBookingsPage /> }, // <--- THIS ADDS THE ROUTE
+      ],
+    },
 
+    // 3. ADMIN DASHBOARD
+    {
+      path: '/admin',
+      element: (
+        <ProtectedRoute allowedRoles={['admin']}>
+          <AdminDashboardLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        { index: true, element: <AdminOverview /> },
+        { path: 'fleet', element: <FleetManagement /> },
+        { path: 'bookings', element: <BookingsManagement /> },
+        { path: 'customers', element: <CustomerManagement /> },
+      ],
+    },
 
-        // Dashboard Routes
-        {
-            path: '/dashboard',
-            element: <DashboardLayout />,  
-            children: [
-                { index: true, element: <DashboardHome /> },
-                { path: 'fleet', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Vehicle Fleet Management</h1></div> },
-                { path: 'bookings', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Bookings Management</h1></div> },
-                { path: 'customers', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Customer Management</h1></div> },
-                { path: 'payments', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Payments & Invoices</h1></div> },
-                { path: 'maintenance', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Vehicle Maintenance</h1></div> },
-                { path: 'analytics', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Business Analytics</h1></div> },
-                { path: 'settings', element: <div className="p-8"><h1 className="text-3xl font-bold text-[#001524]">Settings</h1></div> },
-            ],
-        },
-    ]);
+    // 4. SUPER ADMIN
+    {
+      path: '/super-admin',
+      element: (
+        <ProtectedRoute allowedRoles={['superAdmin']}>
+          <SuperAdminDashboardLayout />
+        </ProtectedRoute>
+      ),
+      children: [
+        { index: true, element: <div className="p-8"><h1>Super Admin Overview</h1></div> },
+      ],
+    },
+  ]);
 
-    return <RouterProvider router={router} />;
+  return <RouterProvider router={router} />;
 }
 
 export default App;
+
+
+
+
+// import { RouterProvider, createBrowserRouter, Navigate } from 'react-router-dom';
+// import { useSelector } from 'react-redux';
+
+// // --- LAYOUTS ---
+// import PublicLayout from './layouts/PublicLayout';
+// import UserDashboardLayout from './Userdashboarddesign/UserDashboardLayout';
+// import AdminDashboardLayout from './Userdashboarddesign/AdminDashboardLayout';
+// import SuperAdminDashboardLayout from './Userdashboarddesign/SuperAdminDashboardLayout'; // Ensure this exists
+
+// // --- PAGES ---
+// import Home from './pages/home';
+// import Login from './pages/Login';
+// import Register from './pages/Register';
+
+// // User Pages
+// import UserDashboardHome from './pages/UserPage/MyDashboard';
+// import UserVehiclesPage from './pages/UserPage/VehiclesPage';
+
+// // Admin Pages
+// import AdminOverview from './pages/AdminPage/AdminDashboard';
+// import FleetManagement from './pages/AdminPage/FleetManagement';
+// import BookingsManagement from './pages/AdminPage/BookingsManagement';
+// import CustomerManagement from './pages/AdminPage/CustomerManagement';
+
+// // Super Admin Pages (Examples)
+// // import SystemSettings from './pages/SuperAdmin/SystemSettings';
+// // import ManageAdmins from './pages/SuperAdmin/ManageAdmins';
+
+// // --- AUTH GUARD ---
+// const ProtectedRoute = ({ children, allowedRoles }: { children: React.ReactNode, allowedRoles?: string[] }) => {
+//   const { token, user } = useSelector((state: any) => state.auth) || 
+//                           { token: localStorage.getItem('token'), user: JSON.parse(localStorage.getItem('user') || '{}') };
+
+//   if (!token) return <Navigate to="/login" replace />;
+  
+//   if (allowedRoles && !allowedRoles.includes(user?.role)) {
+//     // Optional: Redirect to their correct dashboard instead of generic unauthorized
+//     if (user.role === 'user') return <Navigate to="/UserDashboard" replace />;
+//     if (user.role === 'admin') return <Navigate to="/admin" replace />;
+//     return <Navigate to="/unauthorized" replace />;
+//   }
+
+//   return <>{children}</>;
+// };
+
+// function App() {
+//   const router = createBrowserRouter([
+//     // 1. PUBLIC ROUTES
+//     {
+//       path: '/',
+//       element: <PublicLayout />,
+//       children: [
+//         { index: true, element: <Home /> },
+//         { path: 'login', element: <Login /> },
+//         { path: 'register', element: <Register /> },
+//       ],
+//     },
+
+//     // 2. USER DASHBOARD (Only 'user')
+//     {
+//       path: '/UserDashboard',
+//       element: (
+//         <ProtectedRoute allowedRoles={['user']}>
+//           <UserDashboardLayout />
+//         </ProtectedRoute>
+//       ),
+//       children: [
+//         { index: true, element: <UserDashboardHome /> },
+//         { path: 'vehicles', element: <UserVehiclesPage /> },
+//         // other user routes...
+//       ],
+//     },
+
+//     // 3. ADMIN DASHBOARD (Only 'admin')
+//     {
+//       path: '/admin',
+//       element: (
+//         <ProtectedRoute allowedRoles={['admin']}>
+//           <AdminDashboardLayout />
+//         </ProtectedRoute>
+//       ),
+//       children: [
+//         { index: true, element: <AdminOverview /> },
+//         { path: 'fleet', element: <FleetManagement /> },
+//         { path: 'bookings', element: <BookingsManagement /> },
+//         { path: 'customers', element: <CustomerManagement /> },
+//       ],
+//     },
+
+//     // 4. SUPER ADMIN DASHBOARD (Only 'superAdmin')
+//     {
+//       path: '/super-admin',
+//       element: (
+//         <ProtectedRoute allowedRoles={['superAdmin']}>
+//           <SuperAdminDashboardLayout />
+//         </ProtectedRoute>
+//       ),
+//       children: [
+//         // Create a specific home page for Super Admin
+//         { index: true, element: <div className="p-8"><h1>Super Admin Overview</h1></div> },
+        
+//         // Example: Only Super Admin can manage other Admins
+//         { path: 'manage-admins', element: <div className="p-8"><h1>Manage Admins</h1></div> },
+        
+//         // Example: System-wide settings
+//         { path: 'settings', element: <div className="p-8"><h1>Global Settings</h1></div> },
+//       ],
+//     },
+//   ]);
+
+//   return <RouterProvider router={router} />;
+// }
+
+// export default App;

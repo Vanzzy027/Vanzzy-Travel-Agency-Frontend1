@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useGetVehicleByIdQuery } from '../features/api/VehicleAPI';
 import { useCreateBookingMutation } from '../features/api/BookingApi';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface VehicleDetailsModalProps {
   vehicleId: number;
@@ -10,396 +11,377 @@ interface VehicleDetailsModalProps {
 
 const VehicleDetailsModal: React.FC<VehicleDetailsModalProps> = ({ vehicleId, onClose }) => {
   const [selectedTab, setSelectedTab] = useState<'details' | 'booking'>('details');
+  const navigate = useNavigate();
+
+  // --- STATE ---
   const [bookingDates, setBookingDates] = useState({
-    start_date: '',
-    end_date: '',
+    booking_date: '',
+    return_date: '',
   });
 
+  const [services, setServices] = useState({
+    insurance: false,
+    roadside: false,
+    driver: false,
+  });
+
+  const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // --- API HOOKS ---
   const { data: vehicle, isLoading, error } = useGetVehicleByIdQuery(vehicleId);
   const [createBooking, { isLoading: isBookingLoading }] = useCreateBookingMutation();
 
-  const calculateTotal = () => {
-    if (!bookingDates.start_date || !bookingDates.end_date || !vehicle) return 0;
-    
-    const start = new Date(bookingDates.start_date);
-    const end = new Date(bookingDates.end_date);
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return days * vehicle.rental_rate;
+  // --- HELPERS ---
+  const parseSafe = (data: any) => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    try {
+      return JSON.parse(data);
+    } catch (e) {
+      return [];
+    }
   };
 
+  const images = vehicle ? parseSafe(vehicle.images) : [];
+  const features = vehicle ? parseSafe(vehicle.features) : [];
+  const defaultImage = 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80';
+
+  // --- CALCULATIONS ---
+  const calculateDays = () => {
+    if (!bookingDates.booking_date || !bookingDates.return_date) return 0;
+    const start = new Date(bookingDates.booking_date);
+    const end = new Date(bookingDates.return_date);
+    if (start >= end) return 0;
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  };
+
+  const calculateTotal = () => {
+    if (!vehicle) return 0;
+    const days = calculateDays();
+    if (days === 0) return 0;
+
+    let dailyTotal = Number(vehicle.rental_rate);
+    if (services.insurance) dailyTotal += 25;
+    if (services.roadside) dailyTotal += 15;
+    if (services.driver) dailyTotal += 10;
+    return dailyTotal * days;
+  };
+
+  const days = calculateDays();
+  const totalAmount = calculateTotal();
+
+  // --- SUBMIT HANDLER (FIXED) ---
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!bookingDates.start_date || !bookingDates.end_date) {
-      toast.error('Please select both start and end dates');
+    // 1. Validation
+    if (!bookingDates.booking_date || !bookingDates.return_date) {
+      toast.error('Please select valid dates');
       return;
     }
-
-    if (new Date(bookingDates.start_date) >= new Date(bookingDates.end_date)) {
-      toast.error('End date must be after start date');
+    if (!termsAccepted) {
+      toast.error('You must accept the terms and conditions');
       return;
     }
 
     try {
-      const bookingData = {
+      // 2. Prepare Payload
+      const payload = {
         vehicle_id: vehicleId,
-        start_date: bookingDates.start_date,
-        end_date: bookingDates.end_date,
-        total_amount: calculateTotal(),
+        booking_date: bookingDates.booking_date,
+        return_date: bookingDates.return_date,
+        total_amount: totalAmount, // Use the calculated const
       };
 
-      await createBooking(bookingData).unwrap();
+      console.log("🚀 SENDING BOOKING REQUEST:", payload); 
+
+      // 3. API Call
+      await createBooking(payload).unwrap();
+
+      // 4. Success Handling
       toast.success('Booking confirmed! 🎉');
       onClose();
+      navigate('/UserDashboard/my-bookings'); 
+
     } catch (error: any) {
-      toast.error(error?.data?.message || 'Failed to create booking');
+      console.error("Booking Error:", error);
+      
+      const errorMessage = error?.data?.error || error?.data?.message || 'Failed to create booking';
+
+      if (errorMessage && errorMessage.includes('not available')) {
+        toast.error('❌ Vehicle not available for these dates.');
+      } else {
+        toast.error(errorMessage);
+      }
     }
   };
 
+  // --- EARLY RETURNS (LOADING/ERROR) ---
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-[#001524] rounded-2xl p-8 max-w-2xl w-full">
-          <div className="animate-pulse">
-            <div className="h-8 bg-[#445048] rounded w-3/4 mb-4"></div>
-            <div className="h-64 bg-[#445048] rounded mb-4"></div>
-            <div className="grid grid-cols-2 gap-4 mb-4">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="h-4 bg-[#445048] rounded"></div>
-              ))}
-            </div>
-          </div>
-        </div>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-[#001524] rounded-2xl p-8 max-w-2xl w-full text-white">Loading...</div>
       </div>
     );
   }
 
   if (error || !vehicle) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-        <div className="bg-[#001524] rounded-2xl p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">🚗</div>
-          <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">Vehicle Not Found</h3>
-          <p className="text-[#C4AD9D] mb-6">The requested vehicle could not be loaded.</p>
-          <button 
-            onClick={onClose}
-            className="bg-[#F57251] text-[#E9E6DD] px-6 py-3 rounded-lg hover:bg-[#e56546] transition-colors"
-          >
-            Close
-          </button>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-[#001524] rounded-2xl p-8 max-w-md w-full text-center border border-[#F57251]">
+          <p className="text-[#F57251]">Vehicle not found.</p>
+          <button onClick={onClose} className="bg-gray-700 text-white px-4 py-2 mt-4 rounded">Close</button>
         </div>
       </div>
     );
   }
 
-  const images = vehicle.images ? JSON.parse(vehicle.images) : [];
-  const features = vehicle.features ? JSON.parse(vehicle.features) : [];
-  const totalAmount = calculateTotal();
-  const days = totalAmount / vehicle.rental_rate;
-
+  // --- MAIN RENDER ---
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-[#001524] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-[#445048]">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-[#001524] rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#445048]">
+        
+        {/* HEADER */}
+        <div className="flex justify-between items-center p-6 border-b border-[#445048] sticky top-0 bg-[#001524] z-10">
           <div>
             <h2 className="text-2xl font-bold text-[#E9E6DD]">
               {vehicle.manufacturer} {vehicle.model}
             </h2>
-            <p className="text-[#C4AD9D]">{vehicle.year} • {vehicle.color} • {vehicle.vehicle_type}</p>
+            <p className="text-[#C4AD9D] text-sm">
+              {vehicle.year} • {vehicle.color} • {vehicle.vehicle_type}
+            </p>
           </div>
-          <button 
-            onClick={onClose}
-            className="text-[#C4AD9D] hover:text-[#F57251] text-2xl transition-colors"
-          >
-            ×
-          </button>
+          <button onClick={onClose} className="text-[#C4AD9D] hover:text-[#F57251] text-2xl transition-colors">×</button>
         </div>
 
-        {/* Tabs */}
-        <div className="border-b border-[#445048]">
-          <div className="flex space-x-1 px-6">
+        {/* TABS */}
+        <div className="border-b border-[#445048] px-6 bg-[#001524]">
+          <div className="flex space-x-6">
             <button
               onClick={() => setSelectedTab('details')}
-              className={`px-4 py-3 font-semibold transition-colors ${
-                selectedTab === 'details'
-                  ? 'text-[#027480] border-b-2 border-[#027480]'
-                  : 'text-[#C4AD9D] hover:text-[#E9E6DD]'
+              className={`py-4 font-semibold text-sm transition-colors relative ${
+                selectedTab === 'details' ? 'text-[#027480]' : 'text-[#C4AD9D] hover:text-[#E9E6DD]'
               }`}
             >
               Vehicle Details
+              {selectedTab === 'details' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#027480]"></span>}
             </button>
             <button
               onClick={() => setSelectedTab('booking')}
-              className={`px-4 py-3 font-semibold transition-colors ${
-                selectedTab === 'booking'
-                  ? 'text-[#027480] border-b-2 border-[#027480]'
-                  : 'text-[#C4AD9D] hover:text-[#E9E6DD]'
+              className={`py-4 font-semibold text-sm transition-colors relative ${
+                selectedTab === 'booking' ? 'text-[#027480]' : 'text-[#C4AD9D] hover:text-[#E9E6DD]'
               }`}
             >
               Book This Vehicle
+              {selectedTab === 'booking' && <span className="absolute bottom-0 left-0 w-full h-0.5 bg-[#027480]"></span>}
             </button>
           </div>
         </div>
 
         <div className="p-6">
           {selectedTab === 'details' ? (
-            /* Vehicle Details Tab */
-            <div className="space-y-6">
-              {/* Image Gallery */}
+            /* === DETAILS TAB === */
+            <div className="space-y-8">
+              {/* Images & Key Info */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-4">
-                  <img 
-                    src={images[0] || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'} 
-                    alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                    className="w-full h-64 object-cover rounded-xl"
-                  />
-                  <div className="grid grid-cols-3 gap-2">
-                    {images.slice(1, 4).map((img: string, index: number) => (
-                      <img 
-                        key={index}
-                        src={img} 
-                        alt={`${vehicle.manufacturer} ${vehicle.model} ${index + 1}`}
-                        className="w-full h-20 object-cover rounded-lg"
-                      />
-                    ))}
+                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-[#445048]">
+                    <img src={images[0] || defaultImage} alt="Main" className="w-full h-full object-cover" />
                   </div>
+                  {images.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {images.slice(0, 4).map((img: string, i: number) => (
+                        <img key={i} src={img} alt="thumb" className="h-16 w-full object-cover rounded-md cursor-pointer border border-[#445048]" />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {/* Quick Info */}
-                <div className="bg-[#445048] rounded-xl p-6">
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Status</p>
-                      <p className={`font-semibold ${
-                        vehicle.status === 'Available' ? 'text-[#027480]' : 
-                        vehicle.status === 'Rented' ? 'text-[#F57251]' : 
-                        'text-[#C4AD9D]'
-                      }`}>
-                        {vehicle.status}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">VIN</p>
-                      <p className="text-[#E9E6DD] font-mono text-sm">{vehicle.vin_number}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">License Plate</p>
-                      <p className="text-[#E9E6DD] font-semibold">{vehicle.license_plate}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Mileage</p>
-                      <p className="text-[#E9E6DD]">{vehicle.current_mileage.toLocaleString()} km</p>
-                    </div>
+                <div className="bg-[#445048]/20 rounded-xl p-6 border border-[#445048]">
+                  <div className="grid grid-cols-2 gap-6">
+                    <InfoBox label="License Plate" value={vehicle.license_plate} />
+                    <InfoBox label="Status" value={vehicle.status} highlight={vehicle.status === 'Available'} />
+                    <InfoBox label="Mileage" value={`${(vehicle.current_mileage || 0).toLocaleString()} km`} />
+                    <InfoBox label="Daily Rate" value={`$${vehicle.rental_rate}`} large />
                   </div>
-
-                  {/* Pricing */}
-                  <div className="border-t border-[#001524] pt-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[#C4AD9D]">Daily Rate</span>
-                      <span className="text-2xl font-bold text-[#E9E6DD]">${vehicle.rental_rate}</span>
-                    </div>
-                    {vehicle.on_promo && vehicle.daily_rate && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-[#C4AD9D]">Original Price</span>
-                        <span className="text-[#C4AD9D] line-through">${vehicle.daily_rate}</span>
+                  
+                  {/* Additional Pricing Info */}
+                  <div className="mt-6 pt-4 border-t border-[#445048] space-y-2">
+                    {vehicle.weekly_rate && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#C4AD9D]">Weekly Rate</span>
+                        <span className="text-[#E9E6DD] font-medium">${vehicle.weekly_rate}</span>
                       </div>
                     )}
-                    <div className="flex justify-between items-center text-sm mt-1">
-                      <span className="text-[#C4AD9D]">Weekly</span>
-                      <span className="text-[#E9E6DD]">${vehicle.weekly_rate}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-[#C4AD9D]">Monthly</span>
-                      <span className="text-[#E9E6DD]">${vehicle.monthly_rate}</span>
-                    </div>
+                    {vehicle.monthly_rate && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#C4AD9D]">Monthly Rate</span>
+                        <span className="text-[#E9E6DD] font-medium">${vehicle.monthly_rate}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
-              {/* Specifications */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Specs & Features */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-lg font-bold text-[#E9E6DD] mb-4">Specifications</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Fuel Type</p>
-                      <p className="text-[#E9E6DD] font-semibold">{vehicle.fuel_type}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Transmission</p>
-                      <p className="text-[#E9E6DD] font-semibold">{vehicle.transmission}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Seating Capacity</p>
-                      <p className="text-[#E9E6DD] font-semibold">{vehicle.seating_capacity} people</p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Fuel Efficiency</p>
-                      <p className="text-[#E9E6DD] font-semibold">{vehicle.fuel_efficiency}</p>
-                    </div>
-                    <div>
-                      <p className="text-[#C4AD9D] text-sm">Insurance Group</p>
-                      <p className="text-[#E9E6DD] font-semibold">{vehicle.insurance_group}</p>
-                    </div>
+                  <h3 className="text-[#E9E6DD] font-bold mb-4">Specifications</h3>
+                  <div className="bg-[#445048]/20 rounded-xl p-4 space-y-3 border border-[#445048]">
+                    <SpecRow label="Fuel Type" value={vehicle.fuel_type} />
+                    <SpecRow label="Transmission" value={vehicle.transmission} />
+                    <SpecRow label="Capacity" value={`${vehicle.seating_capacity} Seats`} />
+                    <SpecRow label="Engine" value={vehicle.engine_capacity} />
+                    <SpecRow label="Fuel Efficiency" value={vehicle.fuel_efficiency} />
+                    <SpecRow label="Insurance Group" value={vehicle.insurance_group} />
                   </div>
                 </div>
-
                 <div>
-                  <h3 className="text-lg font-bold text-[#E9E6DD] mb-4">Features</h3>
+                  <h3 className="text-[#E9E6DD] font-bold mb-4">Features</h3>
                   <div className="flex flex-wrap gap-2">
-                    {features.map((feature: string, index: number) => (
-                      <span 
-                        key={index}
-                        className="bg-[#445048] text-[#E9E6DD] px-3 py-2 rounded-lg text-sm"
-                      >
-                        {feature}
+                    {features.length > 0 ? features.map((feat: string, i: number) => (
+                      <span key={i} className="bg-[#445048] text-[#C4AD9D] px-3 py-1 rounded-lg text-sm border border-[#56635b]">
+                        {feat}
                       </span>
-                    ))}
+                    )) : <span className="text-[#C4AD9D]">No features listed</span>}
                   </div>
                 </div>
               </div>
             </div>
           ) : (
-            /* Booking Tab */
+            /* === BOOKING TAB === */
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Vehicle Summary */}
-              <div className="bg-[#445048] rounded-xl p-6">
-                <h3 className="text-lg font-bold text-[#E9E6DD] mb-4">Booking Summary</h3>
-                
-                <div className="flex items-center space-x-4 mb-6">
-                  <img 
-                    src={images[0] || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'} 
-                    alt={`${vehicle.manufacturer} ${vehicle.model}`}
-                    className="w-20 h-20 object-cover rounded-lg"
-                  />
-                  <div>
-                    <h4 className="text-[#E9E6DD] font-semibold">{vehicle.manufacturer} {vehicle.model}</h4>
-                    <p className="text-[#C4AD9D] text-sm">{vehicle.year} • {vehicle.color}</p>
-                    <p className="text-[#027480] font-semibold">${vehicle.rental_rate}/day</p>
+              
+              {/* Left Column: Summary & Breakdown */}
+              <div className="space-y-6">
+                <div className="bg-[#445048]/30 rounded-xl p-6 border border-[#445048]">
+                  <h3 className="text-lg font-bold text-[#E9E6DD] mb-4">Booking Summary</h3>
+                  <div className="flex items-center space-x-4 mb-6">
+                    <img src={images[0] || defaultImage} className="w-20 h-20 object-cover rounded-lg" alt="Thumbnail" />
+                    <div>
+                      <h4 className="text-[#E9E6DD] font-semibold">{vehicle.manufacturer} {vehicle.model}</h4>
+                      <p className="text-[#027480] font-bold">${vehicle.rental_rate} <span className="text-xs text-[#C4AD9D] font-normal">/ day</span></p>
+                    </div>
                   </div>
-                </div>
 
-                {/* Pricing Breakdown */}
-                {totalAmount > 0 && (
-                  <div className="space-y-3 border-t border-[#001524] pt-4">
-                    <div className="flex justify-between">
-                      <span className="text-[#C4AD9D]">${vehicle.rental_rate} × {days} days</span>
-                      <span className="text-[#E9E6DD]">${totalAmount}</span>
+                  {days > 0 && (
+                    <div className="space-y-3 border-t border-[#445048] pt-4">
+                      <div className="flex justify-between text-sm text-[#C4AD9D]">
+                        <span>Vehicle Rental ({days} days)</span>
+                        <span>${Number(vehicle.rental_rate) * days}</span>
+                      </div>
+                      
+                      {services.insurance && (
+                        <div className="flex justify-between text-sm text-[#C4AD9D]">
+                          <span>Full Insurance ($25/day)</span>
+                          <span>${25 * days}</span>
+                        </div>
+                      )}
+                      {services.roadside && (
+                        <div className="flex justify-between text-sm text-[#C4AD9D]">
+                          <span>Roadside Assist ($15/day)</span>
+                          <span>${15 * days}</span>
+                        </div>
+                      )}
+                      {services.driver && (
+                        <div className="flex justify-between text-sm text-[#C4AD9D]">
+                          <span>Extra Driver ($10/day)</span>
+                          <span>${10 * days}</span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between font-bold text-lg text-[#E9E6DD] border-t border-[#445048] pt-3 mt-2">
+                        <span>Total Amount</span>
+                        <span className="text-[#F57251]">${totalAmount}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between font-semibold border-t border-[#001524] pt-2">
-                      <span className="text-[#E9E6DD]">Total Amount</span>
-                      <span className="text-[#F57251] text-lg">${totalAmount}</span>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
-              {/* Booking Form */}
+              {/* Right Column: Form */}
               <div>
                 <h3 className="text-lg font-bold text-[#E9E6DD] mb-4">Select Rental Period</h3>
-                
                 <form onSubmit={handleBookingSubmit} className="space-y-6">
+                  
+                  {/* Dates */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="start_date" className="block text-sm font-medium text-[#E9E6DD] mb-2">
-                        Start Date *
-                      </label>
+                      <label className="block text-sm font-medium text-[#C4AD9D] mb-2">Start Date</label>
                       <input
-                        id="start_date"
                         type="date"
-                        value={bookingDates.start_date}
-                        onChange={(e) => setBookingDates(prev => ({ ...prev, start_date: e.target.value }))}
+                        value={bookingDates.booking_date}
+                        onChange={(e) => setBookingDates(p => ({ ...p, booking_date: e.target.value }))}
                         min={new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 bg-[#445048] border-2 border-transparent rounded-xl text-[#E9E6DD] focus:outline-none focus:ring-2 focus:ring-[#027480] transition-all duration-200"
+                        className="w-full px-4 py-3 bg-[#445048] border-2 border-transparent rounded-xl text-[#E9E6DD] focus:border-[#027480] focus:outline-none"
                         required
                       />
                     </div>
-                    
                     <div>
-                      <label htmlFor="end_date" className="block text-sm font-medium text-[#E9E6DD] mb-2">
-                        End Date *
-                      </label>
+                      <label className="block text-sm font-medium text-[#C4AD9D] mb-2">End Date</label>
                       <input
-                        id="end_date"
                         type="date"
-                        value={bookingDates.end_date}
-                        onChange={(e) => setBookingDates(prev => ({ ...prev, end_date: e.target.value }))}
-                        min={bookingDates.start_date || new Date().toISOString().split('T')[0]}
-                        className="w-full px-4 py-3 bg-[#445048] border-2 border-transparent rounded-xl text-[#E9E6DD] focus:outline-none focus:ring-2 focus:ring-[#027480] transition-all duration-200"
+                        value={bookingDates.return_date}
+                        onChange={(e) => setBookingDates(p => ({ ...p, return_date: e.target.value }))}
+                        min={bookingDates.booking_date}
+                        className="w-full px-4 py-3 bg-[#445048] border-2 border-transparent rounded-xl text-[#E9E6DD] focus:border-[#027480] focus:outline-none"
                         required
                       />
                     </div>
                   </div>
 
-                  {/* Additional Services */}
-                  <div>
-                    <h4 className="text-md font-semibold text-[#E9E6DD] mb-3">Additional Services</h4>
+                  {/* Services */}
+                  <div className="bg-[#445048]/20 p-4 rounded-xl border border-[#445048]">
+                    <h4 className="text-sm font-semibold text-[#E9E6DD] mb-3">Additional Services</h4>
                     <div className="space-y-3">
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-[#027480] bg-[#445048] border-[#445048] rounded focus:ring-[#027480] focus:ring-2"
-                        />
-                        <span className="text-[#E9E6DD]">Full Insurance Coverage (+$25/day)</span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-[#027480] bg-[#445048] border-[#445048] rounded focus:ring-[#027480] focus:ring-2"
-                        />
-                        <span className="text-[#E9E6DD]">24/7 Roadside Assistance (+$15/day)</span>
-                      </label>
-                      <label className="flex items-center space-x-3 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-[#027480] bg-[#445048] border-[#445048] rounded focus:ring-[#027480] focus:ring-2"
-                        />
-                        <span className="text-[#E9E6DD]">Additional Driver (+$10/day)</span>
-                      </label>
+                      <Checkbox 
+                        label="Full Insurance Coverage (+$25/day)" 
+                        checked={services.insurance} 
+                        onChange={(c) => setServices(p => ({...p, insurance: c}))} 
+                      />
+                      <Checkbox 
+                        label="24/7 Roadside Assistance (+$15/day)" 
+                        checked={services.roadside} 
+                        onChange={(c) => setServices(p => ({...p, roadside: c}))} 
+                      />
+                      <Checkbox 
+                        label="Additional Driver (+$10/day)" 
+                        checked={services.driver} 
+                        onChange={(c) => setServices(p => ({...p, driver: c}))} 
+                      />
                     </div>
                   </div>
 
                   {/* Terms */}
-                  <div className="flex items-start space-x-3">
+                  <div className="flex items-start space-x-3 p-3 bg-[#445048]/10 rounded-lg">
                     <input
                       id="terms"
                       type="checkbox"
-                      required
-                      className="w-4 h-4 text-[#027480] bg-[#445048] border-[#445048] rounded focus:ring-[#027480] focus:ring-2 mt-1"
+                      checked={termsAccepted}
+                      onChange={(e) => setTermsAccepted(e.target.checked)}
+                      className="w-5 h-5 mt-0.5 accent-[#027480] cursor-pointer"
                     />
-                    <label htmlFor="terms" className="text-sm text-[#C4AD9D]">
-                      I agree to the{' '}
-                      <a href="#" className="text-[#027480] hover:text-[#F57251] transition-colors duration-200">
-                        rental terms and conditions
-                      </a>{' '}
-                      and understand the cancellation policy.
+                    <label htmlFor="terms" className="text-sm text-[#C4AD9D] cursor-pointer select-none">
+                      I agree to the <span className="text-[#027480] hover:underline">Rental Terms & Conditions</span> and understand the cancellation policy.
                     </label>
                   </div>
 
-                  {/* Action Buttons */}
-                  <div className="flex space-x-4 pt-4">
+                  {/* Actions */}
+                  <div className="flex space-x-4 pt-2">
                     <button 
                       type="button"
                       onClick={() => setSelectedTab('details')}
-                      className="flex-1 bg-[#445048] text-[#E9E6DD] px-6 py-3 rounded-lg hover:bg-[#39423b] transition-colors font-semibold"
+                      className="flex-1 bg-[#445048] text-[#E9E6DD] px-6 py-3 rounded-xl hover:bg-[#556059] transition-colors font-semibold"
                     >
-                      Back to Details
+                      Back
                     </button>
                     <button 
                       type="submit"
-                      disabled={isBookingLoading || vehicle.status !== 'Available'}
-                      className="flex-1 bg-[#F57251] text-[#E9E6DD] px-6 py-3 rounded-lg hover:bg-[#e56546] transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isBookingLoading || vehicle.status !== 'Available' || !termsAccepted}
+                      className="flex-1 bg-[#F57251] text-[#E9E6DD] px-6 py-3 rounded-xl hover:bg-[#e56546] transition-colors font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-[#F57251]/20"
                     >
-                      {isBookingLoading ? (
-                        <div className="flex items-center justify-center space-x-2">
-                          <div className="w-4 h-4 border-2 border-[#E9E6DD] border-t-transparent rounded-full animate-spin"></div>
-                          <span>Processing...</span>
-                        </div>
-                      ) : (
-                        `Book Now - $${totalAmount || 0}`
-                      )}
+                      {isBookingLoading ? 'Processing...' : `Book Now • $${totalAmount}`}
                     </button>
                   </div>
                 </form>
@@ -411,5 +393,33 @@ const VehicleDetailsModal: React.FC<VehicleDetailsModalProps> = ({ vehicleId, on
     </div>
   );
 };
+
+// --- SUB-COMPONENTS for Cleanliness ---
+
+const InfoBox = ({ label, value, highlight, large }: any) => (
+  <div>
+    <span className="text-[#C4AD9D] text-xs uppercase tracking-wider block mb-1">{label}</span>
+    <span className={`${large ? 'text-2xl' : 'text-base'} font-bold ${highlight ? 'text-[#027480]' : 'text-[#E9E6DD]'}`}>
+      {value || '-'}
+    </span>
+  </div>
+);
+
+const SpecRow = ({ label, value }: any) => (
+  <div className="flex justify-between items-center border-b border-[#445048] pb-2 last:border-0 last:pb-0">
+    <span className="text-[#C4AD9D] text-sm">{label}</span>
+    <span className="text-[#E9E6DD] font-medium text-sm text-right">{value || '-'}</span>
+  </div>
+);
+
+const Checkbox = ({ label, checked, onChange }: { label: string, checked: boolean, onChange: (c: boolean) => void }) => (
+  <label className="flex items-center space-x-3 cursor-pointer group">
+    <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${checked ? 'bg-[#027480] border-[#027480]' : 'border-[#C4AD9D] group-hover:border-[#E9E6DD]'}`}>
+      {checked && <span className="text-white text-xs">✓</span>}
+    </div>
+    <input type="checkbox" className="hidden" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+    <span className={`text-sm transition-colors ${checked ? 'text-[#E9E6DD]' : 'text-[#C4AD9D]'}`}>{label}</span>
+  </label>
+);
 
 export default VehicleDetailsModal;

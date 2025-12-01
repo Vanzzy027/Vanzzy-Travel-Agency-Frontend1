@@ -5,8 +5,6 @@ import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../features/slice/AuthSlice";
 import { AuthApi } from "../features/api/AuthAPI";
-import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
 // import DashboardLayout from "../layouts/DashboardLayout";
 // import UserDashboardLayout from "../Userdashboarddesign/UserDashboardLayout";
 // import AdminDashboardLayout from "../Userdashboarddesign/AdminDashboardLayout";
@@ -28,33 +26,37 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [loginUser, { isLoading }] = AuthApi.useLoginMutation();
 
-  const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
+const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     try {
       const response = await loginUser(data).unwrap();
-
+      
       console.log("LOGIN RESPONSE:", response);
+      //  Save to Redux
+      dispatch(setCredentials({ token: response.token, user: response.user }));
+      
+      //  SAVE TO LOCAL STORAGE (So it survives refresh)
+      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem('token', response.token);
 
-      dispatch(
-        setCredentials({
-          token: response.token,
-          user: response.user,
-        })
-      );
-      toast.success("Welcome back to VansKE! 🚗");
+      toast.success(`Welcome ${response.user.first_name} back to VansKE! 🚗 !`);
+
+      //toast.success("Welcome back to VansKE! 🚗");
+    
       
       // Redirect based on user role
       setTimeout(() => {
         switch (response.user.role) {
           case 'superAdmin':
-            navigate('/SuperAdminDashboard');
+            navigate('/super-admin');
             break;
           case 'admin':
-            navigate('/AdminPage/dashboard');
+            navigate('/admin');
             break;
-            case 'user':
-              navigate('/UserPage/dashboard');
+          case 'user':
+            navigate('/UserDashboard');
+            break;
           default:
-            navigate('/dashboard');
+            navigate('/');
         }
       }, 800);
     } catch (error: any) {

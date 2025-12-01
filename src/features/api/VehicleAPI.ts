@@ -1,5 +1,8 @@
-// features/api/VehicleAPI.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+// ==========================================
+// 1. INTERFACES & TYPES
+// ==========================================
 
 export interface VehicleSpecification {
   vehicleSpec_id: number;
@@ -11,11 +14,11 @@ export interface VehicleSpecification {
   transmission: string;
   seating_capacity: number;
   color: string;
-  features: string;
-  images: string;
+  features: string; // JSON string
+  images: string;   // JSON string
   on_promo: boolean;
   review_count: number;
-  vehicle_type: string;
+  vehicle_type: string; // Ensure this matches your DB
   fuel_efficiency: string;
   daily_rate: number;
   weekly_rate: number;
@@ -40,12 +43,14 @@ export interface VehicleWithSpecs extends Vehicle {
   model: string;
   year: number;
   fuel_type: string;
+  engine_capacity: string;
   transmission: string;
   seating_capacity: number;
   color: string;
   features: string;
   images: string;
   on_promo: boolean;
+  review_count: number;
   vehicle_type: string;
   fuel_efficiency: string;
   daily_rate: number;
@@ -63,35 +68,34 @@ export type GetVehiclesParams = {
   vehicle_type?: string;
 };
 
+// ==========================================
+// 2. API DEFINITION
+// ==========================================
+
 export const vehicleApi = createApi({
   reducerPath: 'vehicleApi',
+  
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/vehicles',
-    // prepareHeaders: (headers) => {
-    //   const token = localStorage.getItem('token');
-    //   if (token) {
-    //     headers.set('authorization', `Bearer ${token}`);
-    //   }
-    //   headers.set('Content-Type', 'application/json');
-    //   return headers;
-    // },
-
-prepareHeaders: (headers) => {
-  const token = localStorage.getItem('token');  
-  if (token) {
-    headers.set('authorization', `Bearer ${token}`);
-  }
-  return headers;
-},
-
-
-
-
+    // Preserving your original base URL
+    baseUrl: 'http://localhost:3000/api/',
+    
+    prepareHeaders: (headers) => {
+      const token = localStorage.getItem('token');  
+      if (token) {
+        headers.set('authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
   }),
-  tagTypes: ['Vehicle'],
+
+  // Added 'VehicleSpec' tag to handle the new separation of concerns
+  tagTypes: ['Vehicle', 'VehicleSpec'],
 
   endpoints: (builder) => ({
-    // All vehicles with optional filters
+    
+    // ------------------------------------
+    // GET: All Vehicles with Filters
+    // ------------------------------------
     getVehicles: builder.query<VehicleWithSpecs[], GetVehiclesParams>({
       query: (params = {}) => {
         const searchParams = new URLSearchParams();
@@ -101,11 +105,22 @@ prepareHeaders: (headers) => {
           }
         });
         const qs = searchParams.toString();
-        return qs ? `?${qs}` : '';
-      },
-      // Fixed: safe providesTags that never throws
+        return qs ? `?${qs}` : '/vehicles';},
+
+      // ✅ FIX 1: Normalize the response to ensure it's always an Array
+      transformResponse: (response: any) => {
+        if (Array.isArray(response)) return response;
+        if (response?.data && Array.isArray(response.data)) return response.data;
+        // If backend returns empty or weird structure, return empty array to prevent crash
+        return []; },
+
+
+
+
+    
+      // ✅ FIX 2: Check if 'result' is actually an array before mapping
       providesTags: (result) =>
-        result
+        Array.isArray(result)
           ? [
               ...result.map(({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })),
               { type: 'Vehicle', id: 'LIST' },
@@ -113,55 +128,79 @@ prepareHeaders: (headers) => {
           : [{ type: 'Vehicle', id: 'LIST' }],
     }),
 
-    // // Only available vehicles
-    // getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
-    //   query: () => '/available',
-    //   // Fixed: same safe pattern
-    //   providesTags: (result) =>
-    //     result
-    //       ? [
-    //           ...result.map(({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })),
-    //           { type: 'Vehicle', id: 'AVAILABLE' },
-    //         ]
-    //       : [{ type: 'Vehicle', id: 'AVAILABLE' }],
-    // }),
-    // In VehicleAPI.ts — fix getAvailableVehicles and getVehicles
-getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
-  query: () => '/available',
-  transformResponse: (response: any) => {
-    // Handle common backend patterns
-    if (Array.isArray(response)) return response;
-    if (response?.data && Array.isArray(response.data)) return response.data;
-    if (response?.vehicles && Array.isArray(response.vehicles)) return response.vehicles;
-    return []; // fallback
-  },
-  providesTags: (result) => {
-    // ensure the array accepts both numeric ids and the 'AVAILABLE' sentinel
-    const tags: ({ type: 'Vehicle'; id: number | 'AVAILABLE' })[] = (result ?? []).map(
-      ({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })
-    );
-    tags.push({ type: 'Vehicle' as const, id: 'AVAILABLE' });
-    return tags;
-  },
-}),
+    // ------------------------------------
+    // GET: Available Vehicles Only
+    // ------------------------------------
+    getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
+      query: () => '/vehicles/available',
+      transformResponse: (response: any) => {
+        // Preserving your robust response parsing
+        if (Array.isArray(response)) return response;
+        if (response?.data && Array.isArray(response.data)) return response.data;
+        if (response?.vehicles && Array.isArray(response.vehicles)) return response.vehicles;
+        return []; // fallback
 
+        
+      },
+      providesTags: (result) => {
+        const tags: ({ type: 'Vehicle'; id: number | 'AVAILABLE' })[] = (result ?? []).map(
+          ({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })
+        );
+        tags.push({ type: 'Vehicle' as const, id: 'AVAILABLE' });
+        return tags;
+      },
+    }),
+
+    // ------------------------------------
+    // GET: Single Vehicle by ID
+    // ------------------------------------
     getVehicleById: builder.query<VehicleWithSpecs, number>({
-      query: (id) => `/${id}`,
+      query: (id) => `/vehicles/${id}`,
+      transformResponse: (response: { data: VehicleWithSpecs } | any) => {
+        if (response?.data) {
+          return response.data;
+        }
+        return response;
+      },
       providesTags: (_result, _error, id) => [{ type: 'Vehicle', id }],
     }),
 
-    addVehicle: builder.mutation<Vehicle, Partial<Vehicle> & Pick<Vehicle, 'vehicleSpec_id'>>({
+    // ------------------------------------
+    // POST: Create Vehicle Specification (Step 1)
+    // ------------------------------------
+    // This is the NEW endpoint required for your Wizard Form
+    createVehicleSpec: builder.mutation<VehicleSpecification, Partial<VehicleSpecification>>({
       query: (body) => ({
-        url: '',
+        url: '/vehicle-specs', // Assumes your backend route is POST /api/vehicles/specs
         method: 'POST',
         body,
       }),
-      invalidatesTags: [{ type: 'Vehicle', id: 'LIST' }, { type: 'Vehicle', id: 'AVAILABLE' }],
+      // We don't invalidate 'LIST' yet because a spec without a vehicle 
+      // might not show up in your main vehicle table
+      invalidatesTags: [],
     }),
 
+    // ------------------------------------
+    // POST: Create Vehicle Inventory (Step 2)
+    // ------------------------------------
+    addVehicle: builder.mutation<Vehicle, Partial<Vehicle> & Pick<Vehicle, 'vehicleSpec_id'>>({
+      query: (body) => ({
+        url: '/vehicles', // POST to base URL (/api/vehicles)
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [
+        { type: 'Vehicle', id: 'LIST' }, 
+        { type: 'Vehicle', id: 'AVAILABLE' }
+      ],
+    }),
+
+    // ------------------------------------
+    // PUT: Update Vehicle
+    // ------------------------------------
     updateVehicle: builder.mutation<Vehicle, { id: number; updates: Partial<Vehicle> }>({
       query: ({ id, updates }) => ({
-        url: `/${id}`,
+        url: `/vehicles/${id}`,
         method: 'PUT',
         body: updates,
       }),
@@ -172,9 +211,12 @@ getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
       ],
     }),
 
+    // ------------------------------------
+    // DELETE: Remove Vehicle
+    // ------------------------------------
     deleteVehicle: builder.mutation<void, number>({
       query: (id) => ({
-        url: `/${id}`,
+        url: `/vehicles/${id}`,
         method: 'DELETE',
       }),
       invalidatesTags: (_result, _error, id) => [
@@ -186,10 +228,15 @@ getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
   }),
 });
 
+// ==========================================
+// 3. EXPORTS
+// ==========================================
+
 export const {
   useGetVehiclesQuery,
   useGetAvailableVehiclesQuery,
   useGetVehicleByIdQuery,
+  useCreateVehicleSpecMutation, // Exporting the new mutation
   useAddVehicleMutation,
   useUpdateVehicleMutation,
   useDeleteVehicleMutation,
@@ -197,7 +244,22 @@ export const {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 // import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+// // ==========================================
+// // 1. INTERFACES & TYPES
+// // ==========================================
 
 // export interface VehicleSpecification {
 //   vehicleSpec_id: number;
@@ -209,11 +271,11 @@ export const {
 //   transmission: string;
 //   seating_capacity: number;
 //   color: string;
-//   features: string;
-//   images: string;
+//   features: string; // JSON string
+//   images: string;   // JSON string
 //   on_promo: boolean;
 //   review_count: number;
-//   vehicle_type: string;
+//   vehicle_type: string; // Ensure this matches your DB
 //   fuel_efficiency: string;
 //   daily_rate: number;
 //   weekly_rate: number;
@@ -238,103 +300,209 @@ export const {
 //   model: string;
 //   year: number;
 //   fuel_type: string;
+//   engine_capacity: string;
 //   transmission: string;
 //   seating_capacity: number;
 //   color: string;
 //   features: string;
 //   images: string;
 //   on_promo: boolean;
+//   review_count: number;
 //   vehicle_type: string;
 //   fuel_efficiency: string;
 //   daily_rate: number;
 //   weekly_rate: number;
 //   monthly_rate: number;
-//     insurance_group: string;
+//   insurance_group: string;
 // }
 
-// export const VehicleApi = createApi({
+// export type GetVehiclesParams = {
+//   status?: string;
+//   available?: boolean;
+//   page?: number;
+//   limit?: number;
+//   search?: string;
+//   vehicle_type?: string;
+// };
+
+// // ==========================================
+// // 2. API DEFINITION
+// // ==========================================
+
+// export const vehicleApi = createApi({
 //   reducerPath: 'vehicleApi',
+  
 //   baseQuery: fetchBaseQuery({
+//     // Preserving your original base URL
 //     baseUrl: 'http://localhost:3000/api/vehicles',
+    
 //     prepareHeaders: (headers) => {
-//       const token = localStorage.getItem('token');
+//       const token = localStorage.getItem('token');  
 //       if (token) {
 //         headers.set('authorization', `Bearer ${token}`);
 //       }
-//       headers.set('Content-Type', 'application/json');
 //       return headers;
 //     },
 //   }),
-//   tagTypes: ['Vehicle'],
+
+//   // Added 'VehicleSpec' tag to handle the new separation of concerns
+//   tagTypes: ['Vehicle', 'VehicleSpec'],
+
 //   endpoints: (builder) => ({
-//     // Get all vehicles with optional filters
-//     getVehicles: builder.query<VehicleWithSpecs[], { 
-//       status?: string; 
-//       available?: boolean;
-//       page?: number;
-//       limit?: number;
-//     }>({
-//       query: (filters = {}) => {
-//         const params = new URLSearchParams();
-//         Object.entries(filters).forEach(([key, value]) => {
-//           if (value !== undefined && value !== null) {
-//             params.append(key, value.toString());
+    
+//     // ------------------------------------
+//     // GET: All Vehicles with Filters
+//     // ------------------------------------
+//     getVehicles: builder.query<VehicleWithSpecs[], GetVehiclesParams>({
+//       query: (params = {}) => {
+//         const searchParams = new URLSearchParams();
+//         Object.entries(params).forEach(([key, value]) => {
+//           if (value != null && value !== '') {
+//             searchParams.append(key, String(value));
 //           }
 //         });
-//         return `?${params.toString()}`;
-//       },
-//       providesTags: ['Vehicle'],
+//         const qs = searchParams.toString();
+//         return qs ? `?${qs}` : '';},
+
+//       // ✅ FIX 1: Normalize the response to ensure it's always an Array
+//       transformResponse: (response: any) => {
+//         if (Array.isArray(response)) return response;
+//         if (response?.data && Array.isArray(response.data)) return response.data;
+//         // If backend returns empty or weird structure, return empty array to prevent crash
+//         return []; },
+
+
+
+
+    
+//       // ✅ FIX 2: Check if 'result' is actually an array before mapping
+//       providesTags: (result) =>
+//         Array.isArray(result)
+//           ? [
+//               ...result.map(({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })),
+//               { type: 'Vehicle', id: 'LIST' },
+//             ]
+//           : [{ type: 'Vehicle', id: 'LIST' }],
 //     }),
 
-//     // Get available vehicles only
+//     // ------------------------------------
+//     // GET: Available Vehicles Only
+//     // ------------------------------------
 //     getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
 //       query: () => '/available',
-//       providesTags: ['Vehicle'],
+//       transformResponse: (response: any) => {
+//         // Preserving your robust response parsing
+//         if (Array.isArray(response)) return response;
+//         if (response?.data && Array.isArray(response.data)) return response.data;
+//         if (response?.vehicles && Array.isArray(response.vehicles)) return response.vehicles;
+//         return []; // fallback
+//       },
+//       providesTags: (result) => {
+//         const tags: ({ type: 'Vehicle'; id: number | 'AVAILABLE' })[] = (result ?? []).map(
+//           ({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })
+//         );
+//         tags.push({ type: 'Vehicle' as const, id: 'AVAILABLE' });
+//         return tags;
+//       },
 //     }),
 
-//     // Get vehicle by ID
+//     // ------------------------------------
+//     // GET: Single Vehicle by ID
+//     // ------------------------------------
 //     getVehicleById: builder.query<VehicleWithSpecs, number>({
 //       query: (id) => `/${id}`,
-//       providesTags: ['Vehicle'],
+//       transformResponse: (response: { data: VehicleWithSpecs } | any) => {
+//         if (response?.data) {
+//           return response.data;
+//         }
+//         return response;
+//       },
+//       providesTags: (_result, _error, id) => [{ type: 'Vehicle', id }],
 //     }),
 
-//     // Add new vehicle
-//     addVehicle: builder.mutation<Vehicle, Partial<Vehicle>>({
-//       query: (vehicle) => ({
-//         url: '',
+//     // ------------------------------------
+//     // POST: Create Vehicle Specification (Step 1)
+//     // ------------------------------------
+//     // This is the NEW endpoint required for your Wizard Form
+//     createVehicleSpec: builder.mutation<VehicleSpecification, Partial<VehicleSpecification>>({
+//       query: (body) => ({
+//         url: '/specs', // Assumes your backend route is POST /api/vehicles/specs
 //         method: 'POST',
-//         body: vehicle,
+//         body,
 //       }),
-//       invalidatesTags: ['Vehicle'],
+//       // We don't invalidate 'LIST' yet because a spec without a vehicle 
+//       // might not show up in your main vehicle table
+//       invalidatesTags: [],
 //     }),
 
-//     // Update vehicle
+//     // ------------------------------------
+//     // POST: Create Vehicle Inventory (Step 2)
+//     // ------------------------------------
+//     addVehicle: builder.mutation<Vehicle, Partial<Vehicle> & Pick<Vehicle, 'vehicleSpec_id'>>({
+//       query: (body) => ({
+//         url: '', // POST to base URL (/api/vehicles)
+//         method: 'POST',
+//         body,
+//       }),
+//       invalidatesTags: [
+//         { type: 'Vehicle', id: 'LIST' }, 
+//         { type: 'Vehicle', id: 'AVAILABLE' }
+//       ],
+//     }),
+
+//     // ------------------------------------
+//     // PUT: Update Vehicle
+//     // ------------------------------------
 //     updateVehicle: builder.mutation<Vehicle, { id: number; updates: Partial<Vehicle> }>({
 //       query: ({ id, updates }) => ({
 //         url: `/${id}`,
 //         method: 'PUT',
 //         body: updates,
 //       }),
-//       invalidatesTags: ['Vehicle'],
+//       invalidatesTags: (_result, _error, { id }) => [
+//         { type: 'Vehicle', id },
+//         { type: 'Vehicle', id: 'LIST' },
+//         { type: 'Vehicle', id: 'AVAILABLE' },
+//       ],
 //     }),
 
-//     // Delete vehicle
+//     // ------------------------------------
+//     // DELETE: Remove Vehicle
+//     // ------------------------------------
 //     deleteVehicle: builder.mutation<void, number>({
 //       query: (id) => ({
 //         url: `/${id}`,
 //         method: 'DELETE',
 //       }),
-//       invalidatesTags: ['Vehicle'],
+//       invalidatesTags: (_result, _error, id) => [
+//         { type: 'Vehicle', id },
+//         { type: 'Vehicle', id: 'LIST' },
+//         { type: 'Vehicle', id: 'AVAILABLE' },
+//       ],
 //     }),
 //   }),
 // });
+
+// // ==========================================
+// // 3. EXPORTS
+// // ==========================================
 
 // export const {
 //   useGetVehiclesQuery,
 //   useGetAvailableVehiclesQuery,
 //   useGetVehicleByIdQuery,
+//   useCreateVehicleSpecMutation, // Exporting the new mutation
 //   useAddVehicleMutation,
 //   useUpdateVehicleMutation,
 //   useDeleteVehicleMutation,
-// } = VehicleApi;
+// } = vehicleApi;
+
+
+
+
+
+
+
+
+
 

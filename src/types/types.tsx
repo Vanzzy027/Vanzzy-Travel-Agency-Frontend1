@@ -6,15 +6,22 @@ export type UserFormValues={
     phone_number:string
 }
 
-export interface User{
-    user_id:number;
-    first_name:string;
-    last_name:string;
-    email:string;
-    phone_number:string;
-    created_at:string;
-    user_type:string
+// user.interface.ts
+export interface User {
+  user_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  contact_phone: string;
+  address?: string;
+  role: 'user' | 'admin' | 'superAdmin';
+  status: 'active' | 'inactive' | 'banned';
+  verified: boolean;
+  national_id: string;
+  photo?: string;
+  created_at: string;
 }
+
 
 
 export interface MenuItem {

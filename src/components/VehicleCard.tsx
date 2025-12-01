@@ -1,97 +1,31 @@
 import React from 'react';
+import {type VehicleWithSpecs } from '../features/api/VehicleAPI'; 
 
-interface VehicleSpecification {
-  vehicleSpec_id: number;
-  manufacturer: string;
-  model: string;
-  year: number;
-  fuel_type: string;
-  engine_capacity: string;
-  transmission: string;
-  seating_capacity: number;
-  color: string;
-  features: string;
-  images: string;
-  on_promo: boolean;
-  review_count: number;
-  vehicle_type: string;
-  fuel_efficiency: string;
-  daily_rate: number;
-  weekly_rate: number;
-  monthly_rate: number;
-  insurance_group: string;
-}
-
-// This component accepts two shapes that come from different API patterns:
-// 1) Nested specification object: { specification: { ... } }
-// 2) Flattened vehicle-with-specs: { manufacturer, model, ... } (VehicleWithSpecs)
-interface Vehicle {
-  vehicle_id: number;
-  vehicleSpec_id: number;
-  vin_number: string;
-  license_plate: string;
-  current_mileage: number;
-  rental_rate: number;
-  status: string;
-  created_at: string;
-  updated_at: string;
-  specification?: VehicleSpecification; // optional to support flattened responses
-  // flattened fields (present when API returns a VehicleWithSpecs)
-  manufacturer?: string;
-  model?: string;
-  year?: number;
-  fuel_type?: string;
-  engine_capacity?: string;
-  transmission?: string;
-  seating_capacity?: number;
-  color?: string;
-  features?: string;
-  images?: string;
-  on_promo?: boolean;
-  review_count?: number;
-  vehicle_type?: string;
-  fuel_efficiency?: string;
-  daily_rate?: number;
-  weekly_rate?: number;
-  monthly_rate?: number;
-  insurance_group?: string;
-}
 
 interface VehicleCardProps {
-  vehicle: Vehicle;
-  // make optional — some consumers render the card without a click handler
+  vehicle: VehicleWithSpecs; 
   onViewDetails?: (vehicleId: number) => void;
 }
 
 const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => {
-  // Normalize spec whether the API returned a nested `specification` object
-  // or a flattened object with the spec fields at root.
-  const spec: VehicleSpecification = vehicle.specification
-    ? vehicle.specification
-    : {
-        vehicleSpec_id: vehicle.vehicleSpec_id ?? -1,
-        manufacturer: vehicle.manufacturer ?? 'Unknown',
-        model: vehicle.model ?? 'Unknown',
-        year: vehicle.year ?? 0,
-        fuel_type: vehicle.fuel_type ?? 'N/A',
-        engine_capacity: vehicle.engine_capacity ?? '',
-        transmission: vehicle.transmission ?? 'N/A',
-        seating_capacity: vehicle.seating_capacity ?? 0,
-        color: vehicle.color ?? 'Unknown',
-        features: vehicle.features ?? '[]',
-        images: vehicle.images ?? '[]',
-        on_promo: vehicle.on_promo ?? false,
-        review_count: vehicle.review_count ?? 0,
-        vehicle_type: vehicle.vehicle_type ?? 'Unknown',
-        fuel_efficiency: vehicle.fuel_efficiency ?? '',
-        daily_rate: vehicle.daily_rate ?? 0,
-        weekly_rate: vehicle.weekly_rate ?? 0,
-        monthly_rate: vehicle.monthly_rate ?? 0,
-        insurance_group: vehicle.insurance_group ?? '',
-      };
-  const images = spec.images ? JSON.parse(spec.images) : [];
-  const features = spec.features ? JSON.parse(spec.features) : [];
+  
+  
+  let images: string[] = [];
+  try {
+    images = vehicle.images ? JSON.parse(vehicle.images) : [];
+  } catch (e) {
+    images = ['https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80'];
+  }
 
+  // 4. Safe Feature Parsing
+  let features: string[] = [];
+  try {
+    features = vehicle.features ? JSON.parse(vehicle.features) : [];
+  } catch (e) {
+    features = [];
+  }
+
+  // Helper for status colors
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Available': return 'bg-[#027480]';
@@ -101,9 +35,11 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
     }
   };
 
+  // Helper for discount math
   const calculateDiscount = () => {
-    if (spec.on_promo && spec.daily_rate) {
-      return Math.round(((spec.daily_rate - vehicle.rental_rate) / spec.daily_rate) * 100);
+    if (vehicle.on_promo && vehicle.daily_rate) {
+      // Assuming 'rental_rate' is the discounted price and 'daily_rate' is original
+      return Math.round(((vehicle.daily_rate - vehicle.rental_rate) / vehicle.daily_rate) * 100);
     }
     return 0;
   };
@@ -114,7 +50,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
       <div className="relative h-48 overflow-hidden">
         <img 
           src={images[0] || 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80'} 
-          alt={`${spec.manufacturer} ${spec.model}`}
+          alt={`${vehicle.manufacturer} ${vehicle.model}`}
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
         />
         
@@ -124,7 +60,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
         </div>
 
         {/* Promo Badge */}
-        {spec.on_promo && (
+        {vehicle.on_promo && (
           <div className="absolute top-4 right-4 bg-[#F57251] text-[#E9E6DD] px-3 py-1 rounded-full text-sm font-semibold">
             {calculateDiscount()}% OFF
           </div>
@@ -132,7 +68,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
 
         {/* Vehicle Type Badge */}
         <div className="absolute bottom-4 left-4 bg-[#445048]/90 text-[#E9E6DD] px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-          {spec.vehicle_type}
+          {vehicle.vehicle_type}
         </div>
       </div>
 
@@ -141,19 +77,21 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
         {/* Header */}
         <div className="flex justify-between items-start mb-3">
           <div>
+            {/* DIRECT ACCESS: No 'spec.' prefix needed */}
             <h3 className="text-xl font-bold text-[#E9E6DD]">
-              {spec.manufacturer} {spec.model}
+              {vehicle.manufacturer} {vehicle.model}
             </h3>
-            <p className="text-[#C4AD9D] text-sm">{spec.year} • {spec.color}</p>
+            <p className="text-[#C4AD9D] text-sm">{vehicle.year} • {vehicle.color}</p>
           </div>
           <div className="text-right">
             <div className="flex items-center space-x-1 mb-1">
               <span className="text-[#D6CC99]">⭐</span>
               <span className="text-[#E9E6DD] font-semibold">
-                {((Math.random() * 2) + 3).toFixed(1)}
+                {/* Random star rating if not in DB, assuming DB doesn't have ratings yet */}
+                {vehicle.review_count ? '4.8' : 'New'} 
               </span>
               <span className="text-[#C4AD9D] text-sm">
-                ({spec.review_count || Math.floor(Math.random() * 100)})
+                ({vehicle.review_count || 0})
               </span>
             </div>
           </div>
@@ -163,19 +101,19 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="flex items-center space-x-2">
             <span className="text-[#027480]">⚙️</span>
-            <span className="text-[#E9E6DD] text-sm">{spec.engine_capacity}</span>
+            <span className="text-[#E9E6DD] text-sm truncate">{vehicle.engine_capacity}</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-[#027480]">⛽</span>
-            <span className="text-[#E9E6DD] text-sm">{spec.fuel_type}</span>
+            <span className="text-[#E9E6DD] text-sm truncate">{vehicle.fuel_type}</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-[#027480]">🚗</span>
-            <span className="text-[#E9E6DD] text-sm">{spec.transmission}</span>
+            <span className="text-[#E9E6DD] text-sm truncate">{vehicle.transmission}</span>
           </div>
           <div className="flex items-center space-x-2">
             <span className="text-[#027480]">👥</span>
-            <span className="text-[#E9E6DD] text-sm">{spec.seating_capacity} Seats</span>
+            <span className="text-[#E9E6DD] text-sm truncate">{vehicle.seating_capacity} Seats</span>
           </div>
         </div>
 
@@ -203,37 +141,41 @@ const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle, onViewDetails }) => 
           <div>
             <div className="flex items-baseline space-x-2">
               <span className="text-2xl font-bold text-[#E9E6DD]">
-                ${vehicle.rental_rate}/day
+                ${vehicle.rental_rate}
               </span>
-              {spec.on_promo && spec.daily_rate && (
-                <span className="text-[#C4AD9D] line-through text-sm">
-                  ${spec.daily_rate}
-                </span>
-              )}
+              <span className="text-[#445048] text-sm">/day</span>
             </div>
-            <p className="text-[#C4AD9D] text-sm">
-              ${spec.weekly_rate}/week • ${spec.monthly_rate}/month
-            </p>
+            {/* Show monthly rate if it exists */}
+            {vehicle.monthly_rate && (
+                <p className="text-[#C4AD9D] text-xs mt-1">
+                ${vehicle.monthly_rate}/mo
+                </p>
+            )}
           </div>
           
           <div className="flex space-x-2">
-            <button 
-              onClick={() => onViewDetails?.(vehicle.vehicle_id)}
-              className="bg-[#027480] text-[#E9E6DD] px-4 py-2 rounded-lg hover:bg-[#026270] transition-colors duration-200 font-semibold text-sm"
-            >
-              Details
-            </button>
-            <button 
-              onClick={() => onViewDetails?.(vehicle.vehicle_id)}
-              className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors duration-200 ${
-                vehicle.status === 'Available' 
-                  ? 'bg-[#F57251] text-[#E9E6DD] hover:bg-[#e56546]' 
-                  : 'bg-[#445048] text-[#C4AD9D] cursor-not-allowed'
-              }`}
-              disabled={vehicle.status !== 'Available'}
-            >
-              {vehicle.status === 'Available' ? 'Rent Now' : vehicle.status}
-            </button>
+            {/* Handle Optional onViewDetails */}
+            {onViewDetails && (
+                <>
+                <button 
+                onClick={() => onViewDetails(vehicle.vehicle_id)}
+                className="bg-[#027480] text-[#E9E6DD] px-4 py-2 rounded-lg hover:bg-[#026270] transition-colors duration-200 font-semibold text-sm"
+                >
+                Details
+                </button>
+                <button 
+                onClick={() => onViewDetails(vehicle.vehicle_id)}
+                className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors duration-200 ${
+                    vehicle.status === 'Available' 
+                    ? 'bg-[#F57251] text-[#E9E6DD] hover:bg-[#e56546]' 
+                    : 'bg-[#445048] text-[#C4AD9D] cursor-not-allowed'
+                }`}
+                disabled={vehicle.status !== 'Available'}
+                >
+                {vehicle.status === 'Available' ? 'Rent Now' : vehicle.status}
+                </button>
+                </>
+            )}
           </div>
         </div>
       </div>
