@@ -7,6 +7,10 @@ import { AuthApi } from '../features/api/AuthAPI';
 import { vehicleApi } from '../features/api/VehicleAPI';
 import { bookingApi } from '../features/api/BookingApi';
 import { UserApi } from '../features/api/UserApi';
+//import userReducer from '../features/user/userSlice';
+import { paymentApi } from '../features/api/paymentApi';
+
+
 const persistConfig = {
   key: 'root',
   storage,
@@ -23,6 +27,7 @@ export const store = configureStore({
     [vehicleApi.reducerPath]: vehicleApi.reducer,
     [bookingApi.reducerPath]: bookingApi.reducer, 
     [UserApi.reducerPath]: UserApi.reducer,
+     [paymentApi.reducerPath]: paymentApi.reducer, 
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -33,7 +38,8 @@ export const store = configureStore({
     .concat(AuthApi.middleware)
     .concat(vehicleApi.middleware)
     .concat(bookingApi.middleware)
-    .concat(UserApi.middleware),
+    .concat(UserApi.middleware)
+    .concat(paymentApi.middleware),
 });
 
 export const persistor = persistStore(store);

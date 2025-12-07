@@ -23,7 +23,7 @@ const Navbar: React.FC = () => {
           <div className="hidden md:flex items-center space-x-8">
             <Link to="/" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
               Home
-            </Link>
+            </Link> 
 
             <Link to="/fleet" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
               Fleet
@@ -37,15 +37,15 @@ const Navbar: React.FC = () => {
               Locations
             </Link>
 
-            <Link to="/contact" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
+            {/* {/* <Link to="/contact" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
               Contact
             </Link>
-          </div>
+          </div> */}
 
           {/* Right-side actions */}
           <div className="flex items-center space-x-4">
-            {/* Login */}
-            <Link
+            {/* Login */ }
+             <Link
               to="/login"
               className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200"
             >
@@ -97,6 +97,7 @@ const Navbar: React.FC = () => {
             </div>
           </div>
 
+        </div>
         </div>
       </nav>
     </div>

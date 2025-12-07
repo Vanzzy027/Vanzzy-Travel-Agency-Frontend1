@@ -1,150 +1,183 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-
-
-export interface User {
-  user_id: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  contact_phone: string;
-  address?: string;
-  role: 'user' | 'admin' | 'superAdmin';
-  status: 'active' | 'inactive' | 'banned';
-  verified: boolean;
-  national_id: string;
-  photo?: string;
-  created_at: string;
-}
+import type { User } from '../../types/types'; // Adjust path as needed
 
 export const UserApi = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/users',
+    baseUrl: 'http://localhost:3000/api/users', // Check your port
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
-      if (token) {
-        headers.set('authorization', `Bearer ${token}`);
-      }
+      if (token) headers.set('authorization', `Bearer ${token}`);
       return headers;
     },
   }),
   tagTypes: ['User'],
   endpoints: (builder) => ({
     
-    // --- USER ENDPOINTS ---
-
-    // Get logged in user details
-    getMyProfile: builder.query<User, void>({
-      query: () => '/profile', // Matches Hono: userRoutes.get('/profile')
+    // Get current user's profile
+    getProfile: builder.query<User, void>({
+      query: () => '/profile',
+      transformResponse: (response: any) => {
+        console.log("🚀 PROFILE API RESPONSE:", response);
+        
+        // Handle different response formats
+        if (response?.data) return response.data;
+        return response;
+      },
       providesTags: ['User'],
-      transformResponse: (response: any) => response.data || response,
     }),
 
-    // Update own profile
+    // Update current user's profile
     updateProfile: builder.mutation<User, Partial<User>>({
-      query: (data) => ({
-        url: '/profile/update', // Matches Hono: userRoutes.put('/profile/update')
+      query: (updates) => ({
+        url: '/profile/update',
         method: 'PUT',
-        body: data,
+        body: updates,
       }),
       invalidatesTags: ['User'],
     }),
 
-    // --- ADMIN ENDPOINTS ---
-
-    // Get ALL users (for CustomerManagement)
-getAllUsers: builder.query<User[], void>({
-    query: () => '/all', 
-transformResponse: (response: any): User[] => {
-        // Guarantees an array is returned for providesTags
-        const data = response?.data || response;
-        return Array.isArray(data) ? data : [];
-   
-    },
-    providesTags: (result) =>
-        // 💡 FIX: Check if result is truthy AND if it is an array
-        Array.isArray(result) && result.length > 0
-            ? [
-                ...result.map(({ user_id }) => ({ type: 'User' as const, id: user_id })),
-                { type: 'User', id: 'LIST' },
-            ]
-            : [{ type: 'User', id: 'LIST' }],
-}),
-
-    // Get specific user by ID
+    // Get user by ID (admin only)
     getUserById: builder.query<User, string>({
       query: (id) => `/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'User', id }],
+      transformResponse: (response: any) => {
+        if (response?.data) return response.data;
+        return response;
+      },
     }),
 
-    // Update User (Used for Soft Delete/Ban/Verify)
-    // Matches Hono: userRoutes.put('/:id')
-    updateUser: builder.mutation<User, { id: string; updates: Partial<User> }>({
+    // READ all users (admin only)
+    getAllUsers: builder.query<User[], void>({
+      query: () => '/all',
+      transformResponse: (response: any) => {
+        console.log("🚀 RAW API RESPONSE:", response);
+        
+        if (response?.data && Array.isArray(response.data)) {
+            return response.data;
+        }
+        
+        if (Array.isArray(response)) {
+            return response;
+        }
+
+        if (response?.users && Array.isArray(response.users)) {
+            return response.users;
+        }
+
+        return [];
+      },
+      providesTags: ['User'],
+    }),
+
+    // UPDATE user by ID (admin only)
+    updateUser: builder.mutation<void, { id: string; updates: Partial<User> }>({
       query: ({ id, updates }) => ({
         url: `/${id}`,
         method: 'PUT',
         body: updates,
       }),
-      // Invalidates the specific user AND the list so the table updates
-      invalidatesTags: (_result, _error, { id }) => [
-        { type: 'User', id },
-        { type: 'User', id: 'LIST' },
-      ],
+      invalidatesTags: ['User'],
     }),
 
-    // Hard Delete User (Optional, if you decide to use it later)
+    // DELETE user (admin only)
     deleteUser: builder.mutation<void, string>({
       query: (id) => ({
         url: `/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: [{ type: 'User', id: 'LIST' }],
+      invalidatesTags: ['User'],
+    }),
+
+    // Change user role (super admin only)
+    changeUserRole: builder.mutation<void, { id: string; role: string }>({
+      query: ({ id, role }) => ({
+        url: `/${id}/role`,
+        method: 'PATCH',
+        body: { role },
+      }),
+      invalidatesTags: ['User'],
     }),
   }),
 });
 
 export const { 
-  useGetMyProfileQuery, 
+  useGetProfileQuery,
   useUpdateProfileMutation,
-  useGetAllUsersQuery,
   useGetUserByIdQuery,
-  useUpdateUserMutation,
-  useDeleteUserMutation
+  useGetAllUsersQuery, 
+  useUpdateUserMutation, 
+  useDeleteUserMutation,
+  useChangeUserRoleMutation,
 } = UserApi;
 
-
-
 // import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+// import type { User } from '../../types/types'; // Adjust path as needed
 
 // export const UserApi = createApi({
 //   reducerPath: 'userApi',
 //   baseQuery: fetchBaseQuery({
-//     baseUrl: 'http://localhost:3000/api/users', // Adjust based on your backend route
+//     baseUrl: 'http://localhost:3000/api/users', // Check your port
 //     prepareHeaders: (headers) => {
 //       const token = localStorage.getItem('token');
-//       if (token) {
-//         headers.set('authorization', `Bearer ${token}`);
-//       }
+//       if (token) headers.set('authorization', `Bearer ${token}`);
 //       return headers;
 //     },
 //   }),
 //   tagTypes: ['User'],
 //   endpoints: (builder) => ({
-//     // Get logged in user details
-//     getMyProfile: builder.query({
-//       query: () => '/me', // Or whatever your backend endpoint is for current user
+    
+//     // READ
+//     getAllUsers: builder.query<User[], void>({
+//       query: () => '/all',
+//       // 🟢 DEBUGGING LAYER: This ensures your component gets an Array
+//       transformResponse: (response: any) => {
+//         console.log("🚀 RAW API RESPONSE:", response); // Check your browser console!
+        
+//         // Scenario 1: Backend returns { data: [...] }
+//         if (response?.data && Array.isArray(response.data)) {
+//             return response.data;
+//         }
+        
+//         // Scenario 2: Backend returns [...]
+//         if (Array.isArray(response)) {
+//             return response;
+//         }
+
+//         // Scenario 3: Backend returns { users: [...] }
+//         if (response?.users && Array.isArray(response.users)) {
+//             return response.users;
+//         }
+
+//         return []; // Fallback to empty array to prevent UI crash
+//       },
 //       providesTags: ['User'],
 //     }),
-//     // Update profile
-//     updateProfile: builder.mutation({
-//       query: (data) => ({
-//         url: '/profile',
+
+//     // UPDATE
+//     updateUser: builder.mutation<void, { id: string; updates: Partial<User> }>({
+//       query: ({ id, updates }) => ({
+//         url: `/${id}`,
 //         method: 'PUT',
-//         body: data,
+//         body: updates,
+//       }),
+//       invalidatesTags: ['User'],
+//     }),
+
+//     // DELETE
+//     deleteUser: builder.mutation<void, string>({
+//       query: (id) => ({
+//         url: `/${id}`,
+//         method: 'DELETE',
 //       }),
 //       invalidatesTags: ['User'],
 //     }),
 //   }),
 // });
 
-// export const { useGetMyProfileQuery, useUpdateProfileMutation } = UserApi;
+// export const { 
+//   useGetAllUsersQuery, 
+//   useUpdateUserMutation, 
+//   useDeleteUserMutation 
+// } = UserApi;
+
+

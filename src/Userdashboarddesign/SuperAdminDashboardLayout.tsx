@@ -1,10 +1,12 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { ShieldCheck, Users, Settings, LogOut } from 'lucide-react';
+import DashboardNavbar from '../components/DashboardNavbar';
 
 const SuperAdminDashboardLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex">
+              
       {/* Super Admin Sidebar - Distinct Color (e.g., Dark Red/Purple) */}
       <div className="w-64 bg-[#2D0015] min-h-screen flex flex-col text-white">
         <div className="p-6 border-b border-white/10">

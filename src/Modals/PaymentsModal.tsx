@@ -1,178 +1,1409 @@
-import React, { useState } from 'react';
+// import React, { useState, useEffect, useRef } from 'react';
+// import { useNavigate } from 'react-router-dom';
+// import { toast } from 'sonner';
+// import { Shield, X, CreditCard, Smartphone, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+// //import { useProcessPaymentMutation } from '../features/api/BookingApi';
+// import { useInitializePaymentMutation } from '../features/api/BookingApi';
+
+
+// interface PaymentModalProps {
+//   isOpen: boolean;
+//   onClose: () => void;
+//   onSuccess?: () => void;
+//   bookingData: {
+//     booking_id: number;
+//     total_amount: number;
+//     vehicle_manufacturer?: string;
+//     vehicle_model?: string;
+//     vehicle_year?: number;
+//   };
+//   userData: {
+//     email: string;
+//     user_id: string;
+//     first_name: string;
+//     last_name: string;
+//     phone?: string;
+//   };
+//   vehicleDetails: {
+//     make: string;
+//     model: string;
+//     year: number;
+//   };
+// }
+
+// interface PaystackResponse {
+//   status: string;
+//   reference: string;
+//   transaction?: string;
+//   id?: string;
+//   customer?: {
+//     phone?: string;
+//     email?: string;
+//   };
+//   authorization?: {
+//     mobile_money_number?: string;
+//   };
+//   metadata?: any;
+//   message?: string;
+// }
+
+// declare global {
+//   interface Window {
+//     PaystackPop: {
+//       setup(options: any): { openIframe: () => void };
+//     };
+//   }
+// }
+
+// const PaymentModal: React.FC<PaymentModalProps> = ({ 
+//   isOpen, 
+//   onClose, 
+//   onSuccess,
+//   bookingData, 
+//   userData,
+//   vehicleDetails 
+// }) => {
+//   const navigate = useNavigate();
+//   const modalRef = useRef<HTMLDivElement>(null);
+  
+//   const [step, setStep] = useState<'method' | 'details' | 'paystack'>('method');
+//   const [method, setMethod] = useState<'mpesa' | 'card'>('mpesa');
+//   const [phoneNumber, setPhoneNumber] = useState(userData.phone || '');
+//   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+//   const [paystackLoaded, setPaystackLoaded] = useState(false);
+//   const [paymentTimeout, setPaymentTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+//   const [paymentDetails, setPaymentDetails] = useState<PaystackResponse | null>(null);
+
+
+//   // Close modal when clicking outside
+//   useEffect(() => {
+//     const handleClickOutside = (event: MouseEvent) => {
+//       if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+//         handleClose();
+//       }
+//     };
+
+//     if (isOpen) {
+//       document.addEventListener('mousedown', handleClickOutside);
+//     }
+
+//     return () => {
+//       document.removeEventListener('mousedown', handleClickOutside);
+//       if (paymentTimeout) clearTimeout(paymentTimeout);
+//     };
+//   }, [isOpen, paymentTimeout]);
+
+//   // Load Paystack Inline Script
+//   useEffect(() => {
+//     if (!isOpen) return;
+
+//     const script = document.createElement('script');
+//     script.src = 'https://js.paystack.co/v1/inline.js';
+//     script.async = true;
+//     script.onload = () => {
+//       setPaystackLoaded(true);
+//       console.log('✅ Paystack loaded successfully');
+//     };
+//     script.onerror = () => {
+//       console.error('❌ Failed to load Paystack');
+//       toast.error("Failed to load payment gateway");
+//     };
+    
+//     // Check if script already exists
+//     const existingScript = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]');
+//     if (!existingScript) {
+//       document.body.appendChild(script);
+//       console.log('📥 Paystack script added to DOM');
+//     } else {
+//       setPaystackLoaded(true);
+//       console.log('📦 Paystack script already exists');
+//     }
+
+//     return () => {
+//       // Don't remove script on cleanup to avoid reloading
+//     };
+//   }, [isOpen]);
+
+//   // Reset state when modal opens/closes
+//   useEffect(() => {
+//     if (!isOpen) {
+//       setStep('method');
+//       setPaymentStatus('idle');
+//       setPaymentDetails(null);
+//       setPhoneNumber(userData.phone || '');
+//     }
+//   }, [isOpen, userData.phone]);
+
+//   const handleClose = () => {
+//     if (paymentTimeout) clearTimeout(paymentTimeout);
+//     setPaymentStatus('idle');
+//     setStep('method');
+//     onClose();
+//   };
+
+//   const amountInKobo = Math.round(bookingData.total_amount * 100);
+
+//   const handleMethodSelect = (selectedMethod: 'mpesa' | 'card') => {
+//     setMethod(selectedMethod);
+//     if (selectedMethod === 'mpesa') {
+//       if (userData.phone) {
+//         setPhoneNumber(userData.phone);
+//         launchPaystack();
+//       } else {
+//         setStep('details');
+//       }
+//     } else {
+//       launchPaystack();
+//     }
+//   };
+
+//   const launchPaystack = () => {
+//     if (!paystackLoaded) {
+//       toast.error("Payment system still loading. Please wait...");
+//       return;
+//     }
+
+//     if (method === 'mpesa' && !phoneNumber) {
+//       toast.error("Please enter a valid phone number");
+//       return;
+//     }
+
+//     console.log('🚀 Launching Paystack payment...');
+//     setPaymentStatus('processing');
+//     setStep('paystack');
+
+//     // Set timeout for payment initialization (15 seconds)
+//     const timeout = setTimeout(() => {
+//       toast.error("Payment system timed out. Please try again.");
+//       setPaymentStatus('idle');
+//       setStep('method');
+//     }, 15000);
+
+//     setPaymentTimeout(timeout);
+
+//     // Small delay to ensure UI updates
+//     setTimeout(() => {
+//       initializePaystackPayment();
+//     }, 300);
+//   };
+
+//   const initializePaystackPayment = () => {
+//     try {
+//       // Create a unique reference
+//       const reference = `B-${bookingData.booking_id}-${Date.now()}`;
+
+//       console.log('⚙️ Configuring Paystack with:', {
+//         amount: amountInKobo,
+//         email: userData.email,
+//         method,
+//         phone: method === 'mpesa' ? phoneNumber : undefined
+//       });
+
+//       const paymentHandler = window.PaystackPop.setup({
+//         key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_your_key',
+//         email: userData.email,
+//         amount: amountInKobo,
+//         currency: 'KES',
+//         ref: reference,
+        
+//         // Method-specific configurations
+//         ...(method === 'mpesa' && {
+//           mobile_money: {
+//             phone: phoneNumber,
+//             provider: 'mpesa'
+//           },
+//           channels: ['mobile_money'],
+//         }),
+//         ...(method === 'card' && {
+//           channels: ['card'],
+//         }),
+
+//         metadata: {
+//           booking_id: bookingData.booking_id,
+//           user_id: userData.user_id,
+//           vehicle_make: vehicleDetails.make,
+//           vehicle_model: vehicleDetails.model,
+//           vehicle_year: vehicleDetails.year,
+//           phone: phoneNumber,
+//           custom_fields: [
+//             { 
+//               display_name: "Vehicle", 
+//               variable_name: "vehicle", 
+//               value: `${vehicleDetails.year} ${vehicleDetails.make} ${vehicleDetails.model}` 
+//             },
+//             { 
+//               display_name: "Mobile Number", 
+//               variable_name: "mobile_number", 
+//               value: phoneNumber 
+//             }
+//           ]
+//         },
+        
+//         callback: function (response: PaystackResponse) {
+//           console.log('📞 Paystack callback received:', response);
+//           if (paymentTimeout) clearTimeout(paymentTimeout);
+          
+//           if (response.status === 'success') {
+//             handlePaymentSuccess(response);
+//           } else {
+//             handlePaymentFailure(response);
+//           }
+//         },
+        
+//         onClose: function () {
+//           console.log('❌ Paystack modal closed by user');
+//           if (paymentTimeout) clearTimeout(paymentTimeout);
+//           setPaymentStatus('idle');
+//           setStep('method');
+//           toast.info("Payment cancelled.");
+//         }
+//       });
+
+//       console.log('🖱️ Opening Paystack iframe...');
+//       paymentHandler.openIframe();
+      
+//     } catch (error) {
+//       console.error('💥 Paystack initialization error:', error);
+//       if (paymentTimeout) clearTimeout(paymentTimeout);
+//       toast.error("Failed to initialize payment");
+//       setPaymentStatus('idle');
+//       setStep('method');
+//     }
+//   };
+// const handlePaymentSuccess = async (response: PaystackResponse) => {
+//   try {
+//     console.log('✅ Payment successful, response:', response);
+    
+//     // Extract REAL payment data from Paystack
+//     const actualPhone = response.customer?.phone || 
+//                        response.authorization?.mobile_money_number || 
+//                        response.metadata?.phone || 
+//                        phoneNumber;
+    
+//     const transactionId = response.transaction || 
+//                          response.id || 
+//                          `PSK-${Date.now()}`;
+    
+//     const paystackReference = response.reference;
+
+//     console.log('📱 Actual payment data:', {
+//       actualPhone,
+//       transactionId,
+//       paystackReference,
+//       status: response.status,
+//       message: response.message
+//     });
+
+//     // 🔴 CHANGE 1: Prepare data according to InitializePaymentRequest type
+//     // Check what fields your InitializePaymentRequest expects
+//     const paymentData = {
+//       // Most likely these are the required fields based on your error
+//       booking_id: bookingData.booking_id, // Use booking_id, not bookingId
+//       amount: bookingData.total_amount,
+//       payment_method: method === 'mpesa' ? 'M-Pesa' : 'Card',
+      
+//       // Additional fields that might be required
+//       transaction_id: transactionId.toString(),
+//       transaction_reference: paystackReference,
+//       phone_number: actualPhone,
+//       email: userData.email,
+      
+//       // Vehicle info if needed
+//       vehicle_details: {
+//         make: vehicleDetails.make,
+//         model: vehicleDetails.model,
+//         year: vehicleDetails.year,
+//       },
+      
+//       // User info if needed
+//       user_id: userData.user_id,
+//       user_name: `${userData.first_name} ${userData.last_name}`,
+      
+//       // Status
+//       status: 'completed'
+//     };
+
+//     console.log('📤 Sending payment data to backend:', paymentData);
+    
+//     // Save payment details for UI
+//     setPaymentDetails(response);
+    
+//   const [initializePayment] = useInitializePaymentMutation();
+//     // 🔴 CHANGE 2: Use initializePayment mutation with correct data structure
+//     const result = await initializePayment(paymentData).unwrap();
+
+//     console.log('✅ Backend payment processed:', result);
+
+//     setPaymentStatus('success');
+//     toast.success("Payment Received Successfully!");
+    
+//     // 🔴 CHANGE 3: Trigger onSuccess callback (which should refresh bookings)
+//     if (onSuccess) {
+//       onSuccess();
+//     }
+    
+//     // Auto close after delay
+//     setTimeout(() => {
+//       handleClose();
+//       navigate('/UserDashboard/my-bookings');
+//     }, 3000);
+
+//   } catch (err: any) {
+//     console.error("Payment processing error:", err);
+    
+//     let errorMessage = "Payment successful but failed to update booking.";
+    
+//     if (err?.data?.message) {
+//       errorMessage = typeof err.data.message === 'string' 
+//         ? err.data.message 
+//         : JSON.stringify(err.data.message);
+//     } else if (err?.message) {
+//       errorMessage = err.message;
+//     }
+    
+//     toast.error(errorMessage);
+//     setPaymentStatus('failed');
+//   }
+// };
+
+
+//   const handlePaymentFailure = (response: PaystackResponse) => {
+//     console.log('❌ Payment failed:', response);
+//     setPaymentStatus('failed');
+//     setPaymentDetails(response);
+    
+//     let errorMessage = "Transaction was not completed.";
+//     if (response.message) {
+//       errorMessage = response.message;
+//     }
+    
+//     toast.error(errorMessage);
+//   };
+
+//   const handleMpesaSubmit = (e: React.FormEvent) => {
+//     e.preventDefault();
+//     if (phoneNumber.length >= 9) {
+//       launchPaystack();
+//     } else {
+//       toast.error("Please enter a valid phone number");
+//     }
+//   };
+
+//   const handleBack = () => {
+//     setStep('method');
+//     setPaymentStatus('idle');
+//     if (paymentTimeout) clearTimeout(paymentTimeout);
+//   };
+
+//   if (!isOpen) return null;
+
+//   return (
+//     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+//       <div 
+//         ref={modalRef}
+//         className={`bg-[#001524] rounded-2xl border border-[#445048] shadow-2xl overflow-hidden relative animate-in slide-in-from-bottom-4 duration-300 ${
+//           step === 'paystack' ? 'w-full max-w-3xl' : 'w-full max-w-md'
+//         }`}
+//       >
+//         {/* Header - Only show if not in Paystack step */}
+//         {step !== 'paystack' && (
+//           <div className="bg-gradient-to-r from-[#027480] to-[#014d57] p-4 flex justify-between items-center">
+//             <div className="flex items-center gap-2 text-white">
+//               <Shield size={20} />
+//               <h3 className="text-xl font-bold">Secure Payment</h3>
+//             </div>
+//             <button 
+//               onClick={handleClose}
+//               className="text-white hover:text-red-200 transition-colors p-1 rounded-full hover:bg-white/10"
+//             >
+//               <X size={24} />
+//             </button>
+//           </div>
+//         )}
+
+//         <div className="p-6">
+//           {paymentStatus === 'success' ? (
+//             <div className="text-center py-8 animate-in zoom-in duration-300">
+//               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 mb-6">
+//                 <CheckCircle size={40} className="text-green-400" />
+//               </div>
+//               <h3 className="text-2xl font-bold text-green-400 mb-2">Payment Successful!</h3>
+//               <p className="text-[#C4AD9D] mb-2">
+//                 Your booking for the <span className="text-white font-semibold">{vehicleDetails.make} {vehicleDetails.model}</span> is confirmed.
+//               </p>
+              
+//               {paymentDetails && (
+//                 <div className="mt-4 p-4 bg-[#0f2434] rounded-lg border border-[#445048] text-left">
+//                   <div className="grid grid-cols-2 gap-2 text-sm">
+//                     <div className="text-[#C4AD9D]">Reference:</div>
+//                     <div className="text-white font-mono">{paymentDetails.reference}</div>
+                    
+//                     {paymentDetails.customer?.phone && (
+//                       <>
+//                         <div className="text-[#C4AD9D]">Phone:</div>
+//                         <div className="text-white">{paymentDetails.customer.phone}</div>
+//                       </>
+//                     )}
+                    
+//                     {paymentDetails.transaction && (
+//                       <>
+//                         <div className="text-[#C4AD9D]">Transaction ID:</div>
+//                         <div className="text-white font-mono">{paymentDetails.transaction}</div>
+//                       </>
+//                     )}
+//                   </div>
+//                 </div>
+//               )}
+              
+//               <p className="text-xs text-gray-500 mt-6">Redirecting you to dashboard...</p>
+//             </div>
+//           ) : paymentStatus === 'failed' ? (
+//             <div className="text-center py-8">
+//               <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/20 mb-6">
+//                 <AlertCircle size={40} className="text-red-400" />
+//               </div>
+//               <h3 className="text-2xl font-bold text-red-400 mb-2">Payment Failed</h3>
+              
+//               {paymentDetails?.message && (
+//                 <p className="text-[#C4AD9D] mb-4">{paymentDetails.message}</p>
+//               )}
+              
+//               <div className="flex gap-3 justify-center">
+//                 <button
+//                   onClick={handleClose}
+//                   className="px-6 py-3 border-2 border-[#445048] text-[#C4AD9D] rounded-lg font-semibold hover:border-gray-500 hover:text-white transition-colors"
+//                 >
+//                   Close
+//                 </button>
+//                 <button
+//                   onClick={() => {
+//                     setPaymentStatus('idle');
+//                     setStep('method');
+//                     setPaymentDetails(null);
+//                   }}
+//                   className="px-6 py-3 bg-gradient-to-r from-[#F57251] to-[#d65f41] text-white rounded-lg font-semibold hover:opacity-90 transition-colors"
+//                 >
+//                   Try Again
+//                 </button>
+//               </div>
+//             </div>
+//           ) : (
+//             <>
+//               {/* Step 1: Method Selection */}
+//               {step === 'method' && (
+//                 <div className="animate-in slide-in-from-left-4 duration-300">
+//                   {/* Amount Summary */}
+//                   <div className="bg-gradient-to-br from-[#0f2434] to-[#1a3247] p-4 rounded-xl mb-6 border border-[#445048]/50 shadow-inner">
+//                     <div className="flex justify-between items-end">
+//                       <div>
+//                         <p className="text-xs text-[#C4AD9D] uppercase font-bold tracking-wider">Total Amount</p>
+//                         <h2 className="text-3xl font-bold text-white">KES {bookingData.total_amount.toLocaleString()}</h2>
+//                       </div>
+//                       <div className="text-right">
+//                         <p className="text-xs text-[#C4AD9D]">{vehicleDetails.year} {vehicleDetails.make}</p>
+//                         <p className="text-xs text-gray-500">Ref: #{bookingData.booking_id}</p>
+//                       </div>
+//                     </div>
+                    
+//                     {/* Commission breakdown */}
+//                     <div className="mt-3 pt-3 border-t border-[#445048]/50 text-xs">
+//                       <div className="flex justify-between">
+//                         <span className="text-[#C4AD9D]">Service Fee (2%):</span>
+//                         <span className="text-[#C4AD9D]">KES {(bookingData.total_amount * 0.02).toLocaleString()}</span>
+//                       </div>
+//                     </div>
+//                   </div>
+
+//                   <h4 className="text-lg font-semibold text-white mb-4">Select Payment Method</h4>
+//                   <div className="space-y-4">
+//                     <button
+//                       onClick={() => handleMethodSelect('mpesa')}
+//                       disabled={!paystackLoaded}
+//                       className="w-full bg-gradient-to-r from-[#0f2434] to-[#1a3247] p-4 rounded-xl border-2 border-[#445048] hover:border-green-500 transition-all duration-300 flex items-center gap-4 group hover:shadow-lg hover:shadow-green-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+//                     >
+//                       <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center">
+//                         <Smartphone size={24} className="text-white" />
+//                       </div>
+//                       <div className="text-left">
+//                         <h5 className="font-bold text-white text-lg">M-Pesa</h5>
+//                         <p className="text-sm text-[#C4AD9D]">Pay via mobile money</p>
+//                         {userData.phone && (
+//                           <p className="text-xs text-green-400 mt-1">Default: {userData.phone}</p>
+//                         )}
+//                       </div>
+//                       {!paystackLoaded && (
+//                         <div className="ml-auto">
+//                           <Loader2 className="h-4 w-4 animate-spin text-white" />
+//                         </div>
+//                       )}
+//                     </button>
+
+//                     <button
+//                       onClick={() => handleMethodSelect('card')}
+//                       disabled={!paystackLoaded}
+//                       className="w-full bg-gradient-to-r from-[#0f2434] to-[#1a3247] p-4 rounded-xl border-2 border-[#445048] hover:border-orange-500 transition-all duration-300 flex items-center gap-4 group hover:shadow-lg hover:shadow-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+//                     >
+//                       <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-600 to-orange-800 flex items-center justify-center">
+//                         <CreditCard size={24} className="text-white" />
+//                       </div>
+//                       <div className="text-left">
+//                         <h5 className="font-bold text-white text-lg">Credit/Debit Card</h5>
+//                         <p className="text-sm text-[#C4AD9D]">Pay with Visa or Mastercard</p>
+//                       </div>
+//                       {!paystackLoaded && (
+//                         <div className="ml-auto">
+//                           <Loader2 className="h-4 w-4 animate-spin text-white" />
+//                         </div>
+//                       )}
+//                     </button>
+//                   </div>
+
+//                   {/* Loading Indicator for Paystack */}
+//                   {!paystackLoaded && (
+//                     <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-800/30">
+//                       <div className="flex items-center gap-2">
+//                         <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+//                         <p className="text-sm text-blue-300">Loading payment system...</p>
+//                       </div>
+//                     </div>
+//                   )}
+
+//                   {/* Security Footer */}
+//                   <div className="mt-6 pt-6 border-t border-[#445048]/30">
+//                     <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+//                       <Shield size={14} className="text-green-400" />
+//                       Secured by Paystack • 256-bit SSL Encryption
+//                     </div>
+//                   </div>
+//                 </div>
+//               )}
+
+//               {/* Step 2: M-Pesa Phone Input */}
+//               {step === 'details' && (
+//                 <form onSubmit={handleMpesaSubmit} className="animate-in slide-in-from-right-4 duration-300">
+//                   <div className="flex items-center justify-between mb-6">
+//                     <button
+//                       type="button"
+//                       onClick={handleBack}
+//                       className="text-[#C4AD9D] hover:text-white flex items-center gap-2 transition-colors"
+//                     >
+//                       <ArrowLeft size={18} />
+//                       Back
+//                     </button>
+//                     <div className="flex items-center gap-2">
+//                       <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center">
+//                         <Smartphone size={16} className="text-white" />
+//                       </div>
+//                       <span className="font-semibold text-white">M-Pesa Payment</span>
+//                     </div>
+//                   </div>
+
+//                   <div className="space-y-4">
+//                     <div className="bg-[#445048]/20 p-4 rounded-lg border border-[#445048]">
+//                       <p className="text-sm text-[#C4AD9D]">
+//                         Enter your M-Pesa number. A payment request will be sent to this number.
+//                       </p>
+//                     </div>
+
+//                     <div>
+//                       <label className="text-xs font-bold text-[#C4AD9D] uppercase mb-2 block">M-Pesa Number</label>
+//                       <div className="relative">
+//                         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+//                           +254
+//                         </div>
+//                         <input
+//                           type="tel"
+//                           placeholder="712 345 678"
+//                           value={phoneNumber}
+//                           onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 9))}
+//                           className="w-full bg-[#0f2434] border border-[#445048] rounded-lg p-3 pl-16 text-white focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all placeholder-gray-600"
+//                           required
+//                           disabled={paymentStatus === 'processing'}
+//                         />
+//                       </div>
+//                       <p className="text-xs text-gray-500 mt-1">Enter your Safaricom number (e.g., 712345678)</p>
+//                     </div>
+
+//                     <div className="flex gap-3">
+//                       <button
+//                         type="button"
+//                         onClick={handleBack}
+//                         disabled={paymentStatus === 'processing'}
+//                         className="flex-1 py-3 border-2 border-[#445048] text-[#C4AD9D] rounded-lg font-semibold hover:border-gray-500 hover:text-white transition-colors disabled:opacity-50"
+//                       >
+//                         Cancel
+//                       </button>
+//                       <button
+//                         type="submit"
+//                         disabled={paymentStatus === 'processing' || !paystackLoaded || phoneNumber.length < 9}
+//                         className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-lg font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+//                       >
+//                         {paymentStatus === 'processing' ? (
+//                           <>
+//                             <Loader2 className="h-5 w-5 animate-spin" />
+//                             Loading...
+//                           </>
+//                         ) : !paystackLoaded ? (
+//                           <>
+//                             <Loader2 className="h-5 w-5 animate-spin" />
+//                             Loading Gateway...
+//                           </>
+//                         ) : (
+//                           'Proceed to Payment'
+//                         )}
+//                       </button>
+//                     </div>
+//                   </div>
+//                 </form>
+//               )}
+
+//               {/* Step 3: Paystack Interface Loading/Placeholder */}
+//               {step === 'paystack' && (
+//                 <div className="animate-in slide-in-from-bottom-4 duration-300">
+//                   <div className="text-center py-12">
+//                     <div className="h-20 w-20 border-4 border-[#445048] border-t-[#F57251] rounded-full animate-spin mx-auto mb-6"></div>
+//                     <h4 className="text-2xl font-bold text-white mb-3">Loading Payment Gateway</h4>
+//                     <p className="text-[#C4AD9D] mb-6">
+//                       Please wait while we connect to the secure payment system...
+//                     </p>
+//                     <div className="inline-flex items-center gap-3 bg-blue-900/20 px-4 py-3 rounded-lg border border-blue-800/30">
+//                       <Shield size={18} className="text-blue-400" />
+//                       <span className="text-blue-300 text-sm">
+//                         Your payment details are secured
+//                       </span>
+//                     </div>
+//                     <div className="mt-8">
+//                       <button
+//                         onClick={() => {
+//                           if (paymentTimeout) clearTimeout(paymentTimeout);
+//                           setPaymentStatus('idle');
+//                           setStep('method');
+//                         }}
+//                         className="px-6 py-2 border border-[#445048] text-[#C4AD9D] rounded-lg hover:text-white hover:border-gray-500 transition-colors"
+//                       >
+//                         Cancel Payment
+//                       </button>
+//                     </div>
+//                     <p className="text-xs text-gray-500 mt-6">
+//                       This may take a few seconds. If nothing appears in 15 seconds, please try again.
+//                     </p>
+//                   </div>
+//                 </div>
+//               )}
+//             </>
+//           )}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default PaymentModal;
+
+
+
+
+
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner'; // Assuming you use sonner or similar
-// Import your payment API hook here when ready
-// import { useInitiateMpesaMutation, useCheckStatusQuery } from '../features/api/PaymentApi';
+import { toast } from 'sonner';
+import { Shield, X, CreditCard, Smartphone, ArrowLeft, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { useProcessPaymentMutation } from '../features/api/BookingApi';
 
 interface PaymentModalProps {
-  bookingId: number;
+  isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
+  bookingData: {
+    booking_id: number;
+    total_amount: number;
+    vehicle_manufacturer?: string;
+    vehicle_model?: string;
+    vehicle_year?: number;
+  };
+  userData: {
+    email: string;
+    user_id: string;
+    first_name: string;
+    last_name: string;
+    phone?: string;
+  };
+  vehicleDetails: {
+    make: string;
+    model: string;
+    year: number;
+  };
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ bookingId, onClose }) => {
+interface PaystackResponse {
+  status: string;
+  reference: string;
+  transaction?: string;
+  id?: string;
+  customer?: {
+    phone?: string;
+    email?: string;
+  };
+  authorization?: {
+    mobile_money_number?: string;
+  };
+  metadata?: any;
+  message?: string;
+}
+
+declare global {
+  interface Window {
+    PaystackPop: {
+      setup(options: any): { openIframe: () => void };
+    };
+  }
+}
+
+const PaymentModal: React.FC<PaymentModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onSuccess,
+  bookingData, 
+  userData,
+  vehicleDetails 
+}) => {
   const navigate = useNavigate();
-  const [method, setMethod] = useState<'card' | 'mpesa'>('mpesa');
+  const modalRef = useRef<HTMLDivElement>(null);
   
-  // M-Pesa States
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'verify' | 'success'>('idle');
+  const [step, setStep] = useState<'method' | 'details' | 'paystack'>('method');
+  const [method, setMethod] = useState<'mpesa' | 'card'>('mpesa');
+  const [phoneNumber, setPhoneNumber] = useState(userData.phone || '');
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+  const [paystackLoaded, setPaystackLoaded] = useState(false);
+  const [paymentTimeout, setPaymentTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [paymentDetails, setPaymentDetails] = useState<PaystackResponse | null>(null);
 
-  // Card States
-  const [cardNumber, setCardNumber] = useState('');
+  const [processPayment] = useProcessPaymentMutation();
 
-  const handlePayNow = async () => {
-    if (method === 'mpesa') {
-      if (phoneNumber.length < 10) return toast.error("Invalid phone number");
-      
-      setPaymentStatus('processing');
-      
-      // SIMULATION: Call your Backend API to trigger Daraja STK Push here
-      try {
-        // await initiateMpesa({ bookingId, phoneNumber }).unwrap();
-        
-        // Simulate waiting for STK push to arrive on phone
-        setTimeout(() => {
-          setPaymentStatus('verify'); // Change button to Red "Redirect/Check"
-          toast.info("STK Push sent! Enter PIN on your phone.");
-        }, 2000);
-      } catch (err) {
-        setPaymentStatus('idle');
-        toast.error("Failed to send STK Push");
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        handleClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      if (paymentTimeout) clearTimeout(paymentTimeout);
+    };
+  }, [isOpen, paymentTimeout]);
+
+  // Load Paystack Inline Script
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    script.onload = () => {
+      setPaystackLoaded(true);
+      console.log('✅ Paystack loaded successfully');
+    };
+    script.onerror = () => {
+      console.error('❌ Failed to load Paystack');
+      toast.error("Failed to load payment gateway");
+    };
+    
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src="https://js.paystack.co/v1/inline.js"]');
+    if (!existingScript) {
+      document.body.appendChild(script);
+      console.log('📥 Paystack script added to DOM');
+    } else {
+      setPaystackLoaded(true);
+      console.log('📦 Paystack script already exists');
+    }
+
+    return () => {
+      // Don't remove script on cleanup to avoid reloading
+    };
+  }, [isOpen]);
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setStep('method');
+      setPaymentStatus('idle');
+      setPaymentDetails(null);
+      setPhoneNumber(userData.phone || '');
+    }
+  }, [isOpen, userData.phone]);
+
+  const handleClose = () => {
+    if (paymentTimeout) clearTimeout(paymentTimeout);
+    setPaymentStatus('idle');
+    setStep('method');
+    onClose();
+  };
+
+  const amountInKobo = Math.round(bookingData.total_amount * 100);
+
+  const handleMethodSelect = (selectedMethod: 'mpesa' | 'card') => {
+    setMethod(selectedMethod);
+    if (selectedMethod === 'mpesa') {
+      if (userData.phone) {
+        setPhoneNumber(userData.phone);
+        launchPaystack();
+      } else {
+        setStep('details');
       }
     } else {
-        // Handle Card Logic
-        toast.success("Card payment simulated successfully");
-        finishPayment();
+      launchPaystack();
     }
   };
 
-  const handleCheckStatus = async () => {
-    // This is the "Red Button" logic
-    // Call backend to query Daraja status
+  const launchPaystack = () => {
+    if (!paystackLoaded) {
+      toast.error("Payment system still loading. Please wait...");
+      return;
+    }
+
+    if (method === 'mpesa' && !phoneNumber) {
+      toast.error("Please enter a valid phone number");
+      return;
+    }
+
+    console.log('🚀 Launching Paystack payment...');
+    setPaymentStatus('processing');
+    setStep('paystack');
+
+    // Set timeout for payment initialization (15 seconds)
+    const timeout = setTimeout(() => {
+      toast.error("Payment system timed out. Please try again.");
+      setPaymentStatus('idle');
+      setStep('method');
+    }, 15000);
+
+    setPaymentTimeout(timeout);
+
+    // Small delay to ensure UI updates
+    setTimeout(() => {
+      initializePaystackPayment();
+    }, 300);
+  };
+
+  const initializePaystackPayment = () => {
     try {
-      // const status = await checkTransactionStatus(bookingId).unwrap();
+      // Create a unique reference
+      const reference = `B-${bookingData.booking_id}-${Date.now()}`;
+
+      console.log('⚙️ Configuring Paystack with:', {
+        amount: amountInKobo,
+        email: userData.email,
+        method,
+        phone: method === 'mpesa' ? phoneNumber : undefined
+      });
+
+      const paymentHandler = window.PaystackPop.setup({
+        key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_your_key',
+        email: userData.email,
+        amount: amountInKobo,
+        currency: 'KES',
+        ref: reference,
+        
+        // Method-specific configurations
+        ...(method === 'mpesa' && {
+          mobile_money: {
+            phone: phoneNumber,
+            provider: 'mpesa'
+          },
+          channels: ['mobile_money'],
+        }),
+        ...(method === 'card' && {
+          channels: ['card'],
+        }),
+
+        metadata: {
+          booking_id: bookingData.booking_id,
+          user_id: userData.user_id,
+          vehicle_make: vehicleDetails.make,
+          vehicle_model: vehicleDetails.model,
+          vehicle_year: vehicleDetails.year,
+          phone: phoneNumber,
+          custom_fields: [
+            { 
+              display_name: "Vehicle", 
+              variable_name: "vehicle", 
+              value: `${vehicleDetails.year} ${vehicleDetails.make} ${vehicleDetails.model}` 
+            },
+            { 
+              display_name: "Mobile Number", 
+              variable_name: "mobile_number", 
+              value: phoneNumber 
+            }
+          ]
+        },
+        
+        callback: function (response: PaystackResponse) {
+          console.log('📞 Paystack callback received:', response);
+          if (paymentTimeout) clearTimeout(paymentTimeout);
+          
+          if (response.status === 'success') {
+            handlePaymentSuccess(response);
+          } else {
+            handlePaymentFailure(response);
+          }
+        },
+        
+        onClose: function () {
+          console.log('❌ Paystack modal closed by user');
+          if (paymentTimeout) clearTimeout(paymentTimeout);
+          setPaymentStatus('idle');
+          setStep('method');
+          toast.info("Payment cancelled.");
+        }
+      });
+
+      console.log('🖱️ Opening Paystack iframe...');
+      paymentHandler.openIframe();
       
-      // Simulating success from Daraja
-      setPaymentStatus('success');
-      
-      setTimeout(() => {
-        finishPayment();
-      }, 1500);
-      
-    } catch (err) {
-       toast.error("Payment not received yet. Please try again.");
+    } catch (error) {
+      console.error('💥 Paystack initialization error:', error);
+      if (paymentTimeout) clearTimeout(paymentTimeout);
+      toast.error("Failed to initialize payment");
+      setPaymentStatus('idle');
+      setStep('method');
     }
   };
 
-  const finishPayment = () => {
-    toast.success("Booking Confirmed! Payment Received.");
-    onClose();
-    navigate('/UserDashboard'); // Or wherever you want them to go after
+  const handlePaymentSuccess = async (response: PaystackResponse) => {
+    try {
+      console.log('✅ Payment successful, response:', response);
+      
+      // Extract REAL payment data from Paystack
+      const actualPhone = response.customer?.phone || 
+                         response.authorization?.mobile_money_number || 
+                         response.metadata?.phone || 
+                         phoneNumber;
+      
+      const transactionId = response.transaction || 
+                           response.id || 
+                           `PSK-${Date.now()}`;
+      
+      const paystackReference = response.reference;
+
+      console.log('📱 Actual payment data:', {
+        actualPhone,
+        transactionId,
+        paystackReference,
+        status: response.status,
+        message: response.message
+      });
+
+      // Prepare payment data for backend
+      const paymentData = {
+        booking_id: bookingData.booking_id,
+        user_id: userData.user_id,
+        amount: bookingData.total_amount,
+        payment_method: method === 'mpesa' ? 'M-Pesa' : 'Card',
+        payment_status: 'completed',
+        transaction_id: transactionId.toString(),
+        transaction_reference: paystackReference,
+        phone: actualPhone,
+        email: userData.email,
+        vehicle_make: vehicleDetails.make,
+        vehicle_model: vehicleDetails.model,
+        vehicle_year: vehicleDetails.year,
+        gross_amount: bookingData.total_amount,
+        commission_fee: bookingData.total_amount * 0.02, // 2% commission
+        net_amount: bookingData.total_amount * 0.98, // minus commission
+      };
+
+      console.log('📤 Sending payment data to backend:', paymentData);
+      
+      // Save payment details for UI
+      setPaymentDetails(response);
+      
+      // Call backend payment endpoint
+      const backendResponse = await fetch('http://localhost:3000/api/payments/initialize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      console.log('🔧 Backend response status:', backendResponse.status);
+
+      if (!backendResponse.ok) {
+        const errorText = await backendResponse.text();
+        console.error('❌ Backend sync failed:', errorText);
+        throw new Error(`Backend sync failed: ${errorText}`);
+      }
+
+      const result = await backendResponse.json();
+      console.log('✅ Backend sync successful:', result);
+
+      setPaymentStatus('success');
+      toast.success("Payment Received Successfully!");
+      
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        onSuccess();
+      }
+      
+      // Auto close after delay
+      setTimeout(() => {
+        handleClose();
+        navigate('/UserDashboard');
+      }, 3000);
+
+    } catch (err: any) {
+      console.error("Payment processing error:", err);
+      
+      let errorMessage = "Payment successful but failed to update booking.";
+      
+      if (err?.data?.message) {
+        errorMessage = typeof err.data.message === 'string' 
+          ? err.data.message 
+          : JSON.stringify(err.data.message);
+      } else if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.status === 400) {
+        errorMessage = "Invalid payment data. Please check your information.";
+      } else if (err?.status === 404) {
+        errorMessage = "Payment endpoint not found. Please contact support.";
+      }
+      
+      toast.error(errorMessage);
+      setPaymentStatus('failed');
+    }
   };
+
+  const handlePaymentFailure = (response: PaystackResponse) => {
+    console.log('❌ Payment failed:', response);
+    setPaymentStatus('failed');
+    setPaymentDetails(response);
+    
+    let errorMessage = "Transaction was not completed.";
+    if (response.message) {
+      errorMessage = response.message;
+    }
+    
+    toast.error(errorMessage);
+  };
+
+  const handleMpesaSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (phoneNumber.length >= 9) {
+      launchPaystack();
+    } else {
+      toast.error("Please enter a valid phone number");
+    }
+  };
+
+  const handleBack = () => {
+    setStep('method');
+    setPaymentStatus('idle');
+    if (paymentTimeout) clearTimeout(paymentTimeout);
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-      <div className="bg-[#001524] rounded-2xl w-full max-w-lg border border-[#445048] shadow-2xl overflow-hidden">
-        
-        {/* Header */}
-        <div className="bg-[#027480] p-4 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-white">Complete Payment</h3>
-          <button onClick={onClose} className="text-white hover:text-red-200">✕</button>
-        </div>
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[9999] p-4 animate-in fade-in duration-200">
+      <div 
+        ref={modalRef}
+        className={`bg-[#001524] rounded-2xl border border-[#445048] shadow-2xl overflow-hidden relative animate-in slide-in-from-bottom-4 duration-300 ${
+          step === 'paystack' ? 'w-full max-w-3xl' : 'w-full max-w-md'
+        }`}
+      >
+        {/* Header - Only show if not in Paystack step */}
+        {step !== 'paystack' && (
+          <div className="bg-gradient-to-r from-[#027480] to-[#014d57] p-4 flex justify-between items-center">
+            <div className="flex items-center gap-2 text-white">
+              <Shield size={20} />
+              <h3 className="text-xl font-bold">Secure Payment</h3>
+            </div>
+            <button 
+              onClick={handleClose}
+              className="text-white hover:text-red-200 transition-colors p-1 rounded-full hover:bg-white/10"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        )}
 
         <div className="p-6">
           {paymentStatus === 'success' ? (
-            <div className="text-center py-10">
-              <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-2xl font-bold text-green-500">Payment Successful!</h3>
-              <p className="text-[#C4AD9D]">Redirecting you...</p>
+            <div className="text-center py-8 animate-in zoom-in duration-300">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/20 mb-6">
+                <CheckCircle size={40} className="text-green-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-green-400 mb-2">Payment Successful!</h3>
+              <p className="text-[#C4AD9D] mb-2">
+                Your booking for the <span className="text-white font-semibold">{vehicleDetails.make} {vehicleDetails.model}</span> is confirmed.
+              </p>
+              
+              {paymentDetails && (
+                <div className="mt-4 p-4 bg-[#0f2434] rounded-lg border border-[#445048] text-left">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="text-[#C4AD9D]">Reference:</div>
+                    <div className="text-white font-mono">{paymentDetails.reference}</div>
+                    
+                    {paymentDetails.customer?.phone && (
+                      <>
+                        <div className="text-[#C4AD9D]">Phone:</div>
+                        <div className="text-white">{paymentDetails.customer.phone}</div>
+                      </>
+                    )}
+                    
+                    {paymentDetails.transaction && (
+                      <>
+                        <div className="text-[#C4AD9D]">Transaction ID:</div>
+                        <div className="text-white font-mono">{paymentDetails.transaction}</div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <p className="text-xs text-gray-500 mt-6">Redirecting you to dashboard...</p>
+            </div>
+          ) : paymentStatus === 'failed' ? (
+            <div className="text-center py-8">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/20 mb-6">
+                <AlertCircle size={40} className="text-red-400" />
+              </div>
+              <h3 className="text-2xl font-bold text-red-400 mb-2">Payment Failed</h3>
+              
+              {paymentDetails?.message && (
+                <p className="text-[#C4AD9D] mb-4">{paymentDetails.message}</p>
+              )}
+              
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={handleClose}
+                  className="px-6 py-3 border-2 border-[#445048] text-[#C4AD9D] rounded-lg font-semibold hover:border-gray-500 hover:text-white transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setPaymentStatus('idle');
+                    setStep('method');
+                    setPaymentDetails(null);
+                  }}
+                  className="px-6 py-3 bg-gradient-to-r from-[#F57251] to-[#d65f41] text-white rounded-lg font-semibold hover:opacity-90 transition-colors"
+                >
+                  Try Again
+                </button>
+              </div>
             </div>
           ) : (
             <>
-              {/* Method Selection */}
-              <div className="flex gap-4 mb-6">
-                <button 
-                  onClick={() => setMethod('mpesa')}
-                  className={`flex-1 py-3 rounded-xl font-semibold border-2 transition-all ${method === 'mpesa' ? 'border-[#00D632] bg-[#00D632]/10 text-[#00D632]' : 'border-[#445048] text-[#C4AD9D]'}`}
-                >
-                  M-Pesa
-                </button>
-                <button 
-                  onClick={() => setMethod('card')}
-                  className={`flex-1 py-3 rounded-xl font-semibold border-2 transition-all ${method === 'card' ? 'border-[#F57251] bg-[#F57251]/10 text-[#F57251]' : 'border-[#445048] text-[#C4AD9D]'}`}
-                >
-                  Visa / Card
-                </button>
-              </div>
+              {/* Step 1: Method Selection */}
+              {step === 'method' && (
+                <div className="animate-in slide-in-from-left-4 duration-300">
+                  {/* Amount Summary */}
+                  <div className="bg-gradient-to-br from-[#0f2434] to-[#1a3247] p-4 rounded-xl mb-6 border border-[#445048]/50 shadow-inner">
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <p className="text-xs text-[#C4AD9D] uppercase font-bold tracking-wider">Total Amount</p>
+                        <h2 className="text-3xl font-bold text-white">KES {bookingData.total_amount.toLocaleString()}</h2>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-[#C4AD9D]">{vehicleDetails.year} {vehicleDetails.make}</p>
+                        <p className="text-xs text-gray-500">Ref: #{bookingData.booking_id}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Commission breakdown */}
+                    <div className="mt-3 pt-3 border-t border-[#445048]/50 text-xs">
+                      <div className="flex justify-between">
+                        <span className="text-[#C4AD9D]">Service Fee (2%):</span>
+                        <span className="text-[#C4AD9D]">KES {(bookingData.total_amount * 0.02).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
 
-              {/* M-PESA FORM */}
-              {method === 'mpesa' && (
-                <div className="space-y-4">
-                   <div className="bg-[#445048]/30 p-4 rounded-lg border border-[#445048]">
-                     <img src="https://upload.wikimedia.org/wikipedia/commons/1/15/M-PESA_LOGO-01.svg" alt="Mpesa" className="h-8 mb-2" />
-                     <p className="text-sm text-[#C4AD9D]">Enter your M-Pesa number to receive the payment prompt.</p>
-                   </div>
-                   
-                   <div>
-                     <label className="text-sm text-[#C4AD9D] block mb-1">Phone Number</label>
-                     <input 
-                       type="text" 
-                       placeholder="2547..." 
-                       value={phoneNumber}
-                       onChange={(e) => setPhoneNumber(e.target.value)}
-                       disabled={paymentStatus !== 'idle'}
-                       className="w-full bg-[#0f2434] border border-[#445048] rounded-lg p-3 text-white focus:outline-none focus:border-[#00D632]"
-                     />
-                   </div>
+                  <h4 className="text-lg font-semibold text-white mb-4">Select Payment Method</h4>
+                  <div className="space-y-4">
+                    <button
+                      onClick={() => handleMethodSelect('mpesa')}
+                      disabled={!paystackLoaded}
+                      className="w-full bg-gradient-to-r from-[#0f2434] to-[#1a3247] p-4 rounded-xl border-2 border-[#445048] hover:border-green-500 transition-all duration-300 flex items-center gap-4 group hover:shadow-lg hover:shadow-green-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-600 to-green-800 flex items-center justify-center">
+                        <Smartphone size={24} className="text-white" />
+                      </div>
+                      <div className="text-left">
+                        <h5 className="font-bold text-white text-lg">M-Pesa</h5>
+                        <p className="text-sm text-[#C4AD9D]">Pay via mobile money</p>
+                        {userData.phone && (
+                          <p className="text-xs text-green-400 mt-1">Default: {userData.phone}</p>
+                        )}
+                      </div>
+                      {!paystackLoaded && (
+                        <div className="ml-auto">
+                          <Loader2 className="h-4 w-4 animate-spin text-white" />
+                        </div>
+                      )}
+                    </button>
+
+                    <button
+                      onClick={() => handleMethodSelect('card')}
+                      disabled={!paystackLoaded}
+                      className="w-full bg-gradient-to-r from-[#0f2434] to-[#1a3247] p-4 rounded-xl border-2 border-[#445048] hover:border-orange-500 transition-all duration-300 flex items-center gap-4 group hover:shadow-lg hover:shadow-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-600 to-orange-800 flex items-center justify-center">
+                        <CreditCard size={24} className="text-white" />
+                      </div>
+                      <div className="text-left">
+                        <h5 className="font-bold text-white text-lg">Credit/Debit Card</h5>
+                        <p className="text-sm text-[#C4AD9D]">Pay with Visa or Mastercard</p>
+                      </div>
+                      {!paystackLoaded && (
+                        <div className="ml-auto">
+                          <Loader2 className="h-4 w-4 animate-spin text-white" />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Loading Indicator for Paystack */}
+                  {!paystackLoaded && (
+                    <div className="mt-4 p-3 bg-blue-900/20 rounded-lg border border-blue-800/30">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
+                        <p className="text-sm text-blue-300">Loading payment system...</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Security Footer */}
+                  <div className="mt-6 pt-6 border-t border-[#445048]/30">
+                    <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                      <Shield size={14} className="text-green-400" />
+                      Secured by Paystack • 256-bit SSL Encryption
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* CARD FORM */}
-              {method === 'card' && (
-                <div className="space-y-4">
-                   <div className="bg-[#445048]/30 p-4 rounded-lg border border-[#445048] flex items-center gap-4">
-                     <span className="text-2xl">💳</span>
-                     <p className="text-sm text-[#C4AD9D]">Secure Credit/Debit Card Payment</p>
-                   </div>
-                   <input type="text" placeholder="Card Number" className="w-full bg-[#0f2434] border border-[#445048] rounded-lg p-3 text-white" />
-                   <div className="flex gap-4">
-                     <input type="text" placeholder="MM/YY" className="w-1/2 bg-[#0f2434] border border-[#445048] rounded-lg p-3 text-white" />
-                     <input type="text" placeholder="CVC" className="w-1/2 bg-[#0f2434] border border-[#445048] rounded-lg p-3 text-white" />
-                   </div>
-                </div>
+              {/* Step 2: M-Pesa Phone Input */}
+              {step === 'details' && (
+                <form onSubmit={handleMpesaSubmit} className="animate-in slide-in-from-right-4 duration-300">
+                  <div className="flex items-center justify-between mb-6">
+                    <button
+                      type="button"
+                      onClick={handleBack}
+                      className="text-[#C4AD9D] hover:text-white flex items-center gap-2 transition-colors"
+                    >
+                      <ArrowLeft size={18} />
+                      Back
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center">
+                        <Smartphone size={16} className="text-white" />
+                      </div>
+                      <span className="font-semibold text-white">M-Pesa Payment</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-[#445048]/20 p-4 rounded-lg border border-[#445048]">
+                      <p className="text-sm text-[#C4AD9D]">
+                        Enter your M-Pesa number. A payment request will be sent to this number.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-[#C4AD9D] uppercase mb-2 block">M-Pesa Number</label>
+                      <div className="relative">
+                        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                          +254
+                        </div>
+                        <input
+                          type="tel"
+                          placeholder="712 345 678"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 9))}
+                          className="w-full bg-[#0f2434] border border-[#445048] rounded-lg p-3 pl-16 text-white focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-500/50 transition-all placeholder-gray-600"
+                          required
+                          disabled={paymentStatus === 'processing'}
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Enter your Safaricom number (e.g., 712345678)</p>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={handleBack}
+                        disabled={paymentStatus === 'processing'}
+                        className="flex-1 py-3 border-2 border-[#445048] text-[#C4AD9D] rounded-lg font-semibold hover:border-gray-500 hover:text-white transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={paymentStatus === 'processing' || !paystackLoaded || phoneNumber.length < 9}
+                        className="flex-1 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-lg font-bold shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {paymentStatus === 'processing' ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : !paystackLoaded ? (
+                          <>
+                            <Loader2 className="h-5 w-5 animate-spin" />
+                            Loading Gateway...
+                          </>
+                        ) : (
+                          'Proceed to Payment'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </form>
               )}
 
-              {/* ACTION BUTTONS */}
-              <div className="mt-8">
-                {method === 'mpesa' && paymentStatus === 'verify' ? (
-                  // THE RED BUTTON LOGIC
-                  <button 
-                    onClick={handleCheckStatus}
-                    className="w-full bg-[#F57251] hover:bg-[#d65f41] text-white py-4 rounded-xl font-bold text-lg shadow-[0_0_15px_rgba(245,114,81,0.5)] animate-pulse"
-                  >
-                    Confirm Payment & Redirect ➜
-                  </button>
-                ) : (
-                  // THE GREEN BUTTON
-                  <button 
-                    onClick={handlePayNow}
-                    disabled={paymentStatus === 'processing'}
-                    className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all ${
-                        paymentStatus === 'processing' 
-                        ? 'bg-gray-600 cursor-not-allowed' 
-                        : 'bg-[#00D632] hover:bg-[#00b029] text-[#001524]'
-                    }`}
-                  >
-                    {paymentStatus === 'processing' ? 'Sending Request...' : `Pay Now`}
-                  </button>
-                )}
-                
-                {paymentStatus === 'verify' && (
-                   <p className="text-center text-xs text-[#C4AD9D] mt-3">
-                     Check your phone for the M-Pesa PIN prompt. Once done, click the button above.
-                   </p>
-                )}
-              </div>
+              {/* Step 3: Paystack Interface Loading/Placeholder */}
+              {step === 'paystack' && (
+                <div className="animate-in slide-in-from-bottom-4 duration-300">
+                  <div className="text-center py-12">
+                    <div className="h-20 w-20 border-4 border-[#445048] border-t-[#F57251] rounded-full animate-spin mx-auto mb-6"></div>
+                    <h4 className="text-2xl font-bold text-white mb-3">Loading Payment Gateway</h4>
+                    <p className="text-[#C4AD9D] mb-6">
+                      Please wait while we connect to the secure payment system...
+                    </p>
+                    <div className="inline-flex items-center gap-3 bg-blue-900/20 px-4 py-3 rounded-lg border border-blue-800/30">
+                      <Shield size={18} className="text-blue-400" />
+                      <span className="text-blue-300 text-sm">
+                        Your payment details are secured
+                      </span>
+                    </div>
+                    <div className="mt-8">
+                      <button
+                        onClick={() => {
+                          if (paymentTimeout) clearTimeout(paymentTimeout);
+                          setPaymentStatus('idle');
+                          setStep('method');
+                        }}
+                        className="px-6 py-2 border border-[#445048] text-[#C4AD9D] rounded-lg hover:text-white hover:border-gray-500 transition-colors"
+                      >
+                        Cancel Payment
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-6">
+                      This may take a few seconds. If nothing appears in 15 seconds, please try again.
+                    </p>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -182,3 +1413,8 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ bookingId, onClose }) => {
 };
 
 export default PaymentModal;
+
+
+
+
+

@@ -1,8 +1,7 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
-// ==========================================
-// 1. TYPE DEFINITIONS
-// ==========================================
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+//import { type InitializePaymentRequest } from '../../types/types';
+// 1. INTERFACES
 
 export interface BookingDetail {
   booking_id: number;
@@ -46,33 +45,133 @@ export interface CreateBookingRequest {
 }
 
 export interface UpdateBookingRequest {
-  booking_date?: string; // Changed from start_date
-  return_date?: string;  // Changed from end_date
+  booking_date?: string; 
+  return_date?: string;  
   total_amount?: number;
 }
 
-// ==========================================
+// Payment Request Interface
+export interface ProcessPaymentRequest {
+  booking_id: number; 
+  amount: number; 
+  payment_method: string; // 'mpesa' | 'card'
+  transaction_code: string;
+  phone_number?: string; 
+}
+
+// New Payment Interfaces
+// Update this in your BookingApi.ts
+export type InitializePaymentRequest = {
+  booking_id: number;
+  amount: number;
+  payment_method: string;
+  user_id: string;
+  email: string;
+  phone?: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_year: number;
+  transaction_reference?: string;
+  payment_status?: string;
+};
+
+export interface VerifyPaymentRequest {
+  reference: string;
+};
+
+export interface PaymentResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    payment_id: number;
+    reference: string;
+    authorization_url?: string;
+    access_code?: string;
+    amount: number;
+    currency: string;
+    status: string;
+  }};
+
+
+export type ReceiptResponse = {
+  success: boolean;
+  data: {
+    payment: {
+      payment_id: number;
+      payment_date: string;
+      payment_method: string;
+      transaction_id: string;
+      net_amount: number;
+      commission_fee: number;
+      gross_amount: number;
+    };
+    booking: {
+      booking_id: number;
+      total_amount: number;
+      booking_date: string;
+      return_date: string;
+      vehicle_manufacturer: string;
+      vehicle_model: string;
+      vehicle_year: number;
+      license_plate?: string;
+      vin_number?: string;
+    };
+    user: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      contact_phone: string;
+      address?: string;
+    }
+  };
+
+
+
+}
+export interface ChatMessage {
+  role: string;
+  parts: { text: string }[];
+}
+
+export interface ChatResponse {
+  reply: string;
+  actionPerformed?: string;
+  functionResult?: any;
+}
 // 2. API DEFINITION
-// ==========================================
 
 export const bookingApi = createApi({
   reducerPath: 'bookingApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/bookings',
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem('token');
-      if (token) headers.set('authorization', `Bearer ${token}`);
-      headers.set('Content-Type', 'application/json');
+    // Base URL for ALL endpoints
+    baseUrl: 'http://localhost:3000/api',
+    prepareHeaders: (headers, { getState }) => {
+      // Get token from Redux state or localStorage
+      const token = (getState() as any)?.auth?.token || localStorage.getItem('token');
+      
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+        headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),
-  tagTypes: ['Booking'],
+  //   prepareHeaders: (headers) => {
+  //     const token = localStorage.getItem('token');
+  //     if (token) headers.set('authorization', `Bearer ${token}`);
+  //     headers.set('Content-Type', 'application/json');
+  //     return headers;
+  //   },
+  // }),
+  // Add 'Payment' to tagTypes
+  tagTypes: ['Booking', 'Payment'],
 
   endpoints: (builder) => ({
     
-    // READ
+    // --- BOOKING ENDPOINTS ---
+
     getAllBookings: builder.query<BookingDetail[], void>({
-      query: () => '',
+      query: () => '/bookings',
       transformResponse: (response: any) => {
         const rawData = Array.isArray(response) ? response : (response?.data || []);
         // Map backend 'booking_status' to frontend 'status'
@@ -81,11 +180,17 @@ export const bookingApi = createApi({
           status: b.booking_status 
         }));
       },
-      providesTags: (result) => result ? [{ type: 'Booking', id: 'LIST' }] : [{ type: 'Booking', id: 'LIST' }],
+      providesTags: (result) => 
+        result 
+          ? [
+              ...result.map(({ booking_id }) => ({ type: 'Booking' as const, id: booking_id })),
+              { type: 'Booking', id: 'LIST' }
+            ]
+          : [{ type: 'Booking', id: 'LIST' }],
     }),
 
     getUserBookings: builder.query<BookingDetail[], void>({
-      query: () => '/my-bookings',
+      query: () => '/bookings/my-bookings',
       transformResponse: (response: any) => {
         const rawData = Array.isArray(response) ? response : (response?.data || []);
         return rawData.map((b: any) => ({
@@ -93,67 +198,197 @@ export const bookingApi = createApi({
           status: b.booking_status 
         }));
       },
-      providesTags: [{ type: 'Booking', id: 'LIST' }],
+      providesTags: (result) => 
+        result 
+          ? [
+              ...result.map(({ booking_id }) => ({ type: 'Booking' as const, id: booking_id })),
+              { type: 'Booking', id: 'LIST' }
+            ]
+          : [{ type: 'Booking', id: 'LIST' }],
     }),
 
     getBookingById: builder.query<BookingDetail, number>({
-      query: (id) => `/${id}`,
+      query: (id) => `/bookings/${id}`,
+      transformResponse: (response: any) => {
+        const booking = response.data || response;
+        return {
+          ...booking,
+          status: booking.booking_status
+        };
+      },
       providesTags: (_result, _error, id) => [{ type: 'Booking', id }],
     }),
 
-    // WRITE
     createBooking: builder.mutation<BookingDetail, CreateBookingRequest>({
-      query: (body) => ({ url: '', method: 'POST', body }),
-      invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
-    }),
-
-    // THIS IS THE ONE CAUSING REFERENCE ERROR IF MISSING
-    updateBookingStatus: builder.mutation<void, { id: number; status: string }>({
-      query: ({ id, status }) => ({
-        url: `/${id}/status`, // Ensure backend has this route, or use PUT /:id
-        method: 'PATCH',
-        body: { booking_status: status },
+      query: (body) => ({ 
+        url: '/bookings', 
+        method: 'POST', 
+        body 
       }),
       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
     }),
 
+    updateBookingStatus: builder.mutation<void, { id: number; status: string }>({
+      query: ({ id, status }) => ({
+        url: `/bookings/${id}/status`, 
+        method: 'PATCH',
+        body: { booking_status: status },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Booking', id },
+        { type: 'Booking', id: 'LIST' }
+      ],
+    }),
+
     updateBooking: builder.mutation<void, { id: number; data: UpdateBookingRequest }>({
       query: ({ id, data }) => ({
-        url: `/${id}`,
+        url: `/bookings/${id}`,
         method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Booking', id },
+        { type: 'Booking', id: 'LIST' }
+      ],
+    }),
+
+    completeBooking: builder.mutation<void, { id: number; return_date: string; end_mileage: number }>({
+      query: ({ id, ...body }) => ({
+        url: `/bookings/${id}/complete`,
+        method: 'POST',
+        body: {
+            actual_return_date: body.return_date,
+            end_mileage: body.end_mileage
+        },
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'Booking', id },
+        { type: 'Booking', id: 'LIST' }
+      ],
+    }),
+
+    cancelBooking: builder.mutation<void, number>({
+      query: (id) => ({ 
+        url: `/bookings/${id}/cancel`, 
+        method: 'POST' 
+      }),
+      invalidatesTags: (_result, _error, id) => [
+        { type: 'Booking', id },
+        { type: 'Booking', id: 'LIST' }
+      ],
+    }),
+
+    // --- PAYMENT ENDPOINTS ---
+
+    // ✅ NEW: Payment Processing Endpoint (using new service)
+    processPayment: builder.mutation<PaymentResponse, InitializePaymentRequest>({
+      query: (body) => ({
+        url: `/initialize-payment`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
+    }),
+
+    // ✅ NEW: Payment Verification Endpoint
+    verifyPayment: builder.mutation<PaymentResponse, VerifyPaymentRequest>({
+      query: (body) => ({
+        url: `/payments/verify`,
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { reference }) => [
+        { type: 'Booking', id: 'LIST' }, 
+        { type: 'Payment', id: reference }
+      ],
+    }),
+
+    // ✅ NEW: Get Payment by Booking ID
+    getPaymentByBookingId: builder.query<any, number>({
+      query: (bookingId) => `/payments/booking/${bookingId}`,
+      providesTags: (_result, _error, bookingId) => [
+        { type: 'Payment' as const, id: bookingId }
+      ],
+    }),
+
+    // ✅ OLD: Legacy Payment Endpoint (for backward compatibility)
+    initializePayment: builder.mutation<PaymentResponse, any>({
+      query: (data) => ({
+        url: '/payments/initialize',
+        method: 'POST',
         body: data,
       }),
       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
     }),
 
-    completeBooking: builder.mutation<void, { id: number; return_date: string; end_mileage: number }>({
-      query: ({ id, ...body }) => ({
-        url: `/${id}/complete`,
-        method: 'POST', // Backend expects POST for completion usually
-        body: {
-            actual_return_date: body.return_date, // Map to backend expected field
-            end_mileage: body.end_mileage
-        },
+    // ✅ OLD: Process Payment (legacy endpoint - if you still need it)
+    processPaymentLegacy: builder.mutation<void, ProcessPaymentRequest>({
+      query: (body) => ({
+        url: '/bookings/payments/process', // Old endpoint
+        method: 'POST',
+        body,
       }),
       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
     }),
 
-    cancelBooking: builder.mutation<void, number>({
-      query: (id) => ({ url: `/${id}/cancel`, method: 'POST' }),
-      invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
+
+    //Receipt
+        getReceipt: builder.query({
+      query: ({ bookingId, paymentId }) => ({
+        url: paymentId 
+          ? `/payments/${paymentId}/receipt` 
+          : `/bookings/${bookingId}/latest-receipt`,
+        method: 'GET',
+      }),
     }),
+
+
+
+    // AI chat
+    // sendChatMessage: builder.mutation<{ reply: string; actionPerformed?: string }, { message: string; history: any[]; userId: string }>({
+    //   query: (body) => ({
+    //     url: '/chat', //backend url
+    //     method: 'POST',
+    //     body,
+    //   }),
+    // }),
+
+    sendChatMessage: builder.mutation<ChatResponse, {
+      message: string;
+      history: ChatMessage[];
+      userId: string | number;
+    }>({
+      query: (body) => ({
+        url: '/chat',
+        method: 'POST',
+        body,
+      }),
+    }),
+
   }),
 });
+
+
+// 3. EXPORTS
 
 export const {
   useGetAllBookingsQuery,
   useGetUserBookingsQuery,
   useGetBookingByIdQuery,
   useCreateBookingMutation,
-  useUpdateBookingStatusMutation, // Exported correctly
+  useUpdateBookingStatusMutation,
   useUpdateBookingMutation,
   useCompleteBookingMutation,
-  useCancelBookingMutation
+  useCancelBookingMutation,
+  useSendChatMessageMutation, //chat ai
+  
+  // Payment endpoints
+  useProcessPaymentMutation,
+  useVerifyPaymentMutation,
+  useGetPaymentByBookingIdQuery,
+  useInitializePaymentMutation,
+  useProcessPaymentLegacyMutation,
+  useGetReceiptQuery
 } = bookingApi;
 
 
@@ -162,187 +397,397 @@ export const {
 
 
 
-
 // import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-// import type { User } from './UserApi'; 
-// import type { VehicleWithSpecs } from './VehicleAPI'; 
+// //import { type InitializePaymentRequest } from '../../types/types';
+// // 1. INTERFACES
 
 // export interface BookingDetail {
 //   booking_id: number;
 //   user_id: string;
 //   vehicle_id: number;
-//   booking_date: string;
-//   return_date: string;
+  
+//   // MATCHING BACKEND NAMES
+//   booking_date: string; // Rental Start
+//   return_date: string;  // Rental End
+  
 //   total_amount: number;
-//   // We map 'booking_status' to 'status' for frontend consistency
-//   status: 'Pending' | 'Confirmed' | 'Active' | 'Completed' | 'Cancelled'; 
+  
+//   // ADDED 'Active' HERE
+//   status: 'Pending' | 'Confirmed' | 'Active' | 'Completed' | 'Cancelled' | 'Late'; 
+  
 //   created_at: string;
 //   updated_at: string;
-//     // Joined User Data
+
+//   // Joined Data
 //   user_first_name: string;
 //   user_last_name: string;
 //   user_email: string;
 //   user_contact_phone: string;
-//   // The transformer will create this nested object
-//   vehicle?: {
-//     manufacturer: string;
-//     model: string;
-//     year: number;
-//     color: string;
-//     rental_rate: number;
-//     vehicle_type?: string;
-//     images?: string; // or string[]
-//   }; 
+
+//   vehicle_manufacturer: string;
+//   vehicle_model: string;
+//   vehicle_year: number;
+//   vehicle_color: string;
+//   vehicle_license_plate: string;
+//   vehicle_images: string;
+//   vehicle_rental_rate: number;
+//   vehicle_type: string;
 // }
 
 // export interface CreateBookingRequest {
 //   vehicle_id: number;
+//   user_id?: string;
 //   booking_date: string;
 //   return_date: string;
 //   total_amount: number;
 // }
 
-// export const BookingApi = createApi({
+// export interface UpdateBookingRequest {
+//   booking_date?: string; 
+//   return_date?: string;  
+//   total_amount?: number;
+// }
+
+// // Payment Request Interface
+// export interface ProcessPaymentRequest {
+//   booking_id: number; 
+//   amount: number; 
+//   payment_method: string; // 'mpesa' | 'card'
+//   transaction_code: string;
+//   phone_number?: string; 
+// }
+
+// // New Payment Interfaces
+// // Update this in your BookingApi.ts
+// export type InitializePaymentRequest = {
+//   booking_id: number;
+//   amount: number;
+//   payment_method: string;
+//   user_id: string;
+//   email: string;
+//   phone?: string;
+//   vehicle_make: string;
+//   vehicle_model: string;
+//   vehicle_year: number;
+//   transaction_reference?: string;
+//   payment_status?: string;
+// };
+
+// export interface VerifyPaymentRequest {
+//   reference: string;
+// };
+
+// export interface PaymentResponse {
+//   success: boolean;
+//   message: string;
+//   data?: {
+//     payment_id: number;
+//     reference: string;
+//     authorization_url?: string;
+//     access_code?: string;
+//     amount: number;
+//     currency: string;
+//     status: string;
+//   }};
+
+
+// export type ReceiptResponse = {
+//   success: boolean;
+//   data: {
+//     payment: {
+//       payment_id: number;
+//       payment_date: string;
+//       payment_method: string;
+//       transaction_id: string;
+//       net_amount: number;
+//       commission_fee: number;
+//       gross_amount: number;
+//     };
+//     booking: {
+//       booking_id: number;
+//       total_amount: number;
+//       booking_date: string;
+//       return_date: string;
+//       vehicle_manufacturer: string;
+//       vehicle_model: string;
+//       vehicle_year: number;
+//       license_plate?: string;
+//       vin_number?: string;
+//     };
+//     user: {
+//       first_name: string;
+//       last_name: string;
+//       email: string;
+//       contact_phone: string;
+//       address?: string;
+//     }
+//   };
+
+
+
+// }
+// export interface ChatMessage {
+//   role: string;
+//   parts: { text: string }[];
+// }
+
+// export interface ChatResponse {
+//   reply: string;
+//   actionPerformed?: string;
+//   functionResult?: any;
+// }
+// // 2. API DEFINITION
+
+// export const bookingApi = createApi({
 //   reducerPath: 'bookingApi',
 //   baseQuery: fetchBaseQuery({
-//     baseUrl: 'http://localhost:3000/api/bookings',
-//     prepareHeaders: (headers) => {
-//       const token = localStorage.getItem('token');
+//     // Base URL for ALL endpoints
+//     baseUrl: 'http://localhost:3000/api',
+//     prepareHeaders: (headers, { getState }) => {
+//       // Get token from Redux state or localStorage
+//       const token = (getState() as any)?.auth?.token || localStorage.getItem('token');
+      
 //       if (token) {
-//         headers.set('authorization', `Bearer ${token}`);
+//         headers.set('Authorization', `Bearer ${token}`);
 //       }
-//       headers.set('Content-Type', 'application/json');
+//         headers.set('Content-Type', 'application/json');
 //       return headers;
 //     },
 //   }),
-//   tagTypes: ['Booking', 'Vehicle'],
+//   //   prepareHeaders: (headers) => {
+//   //     const token = localStorage.getItem('token');
+//   //     if (token) headers.set('authorization', `Bearer ${token}`);
+//   //     headers.set('Content-Type', 'application/json');
+//   //     return headers;
+//   //   },
+//   // }),
+//   // Add 'Payment' to tagTypes
+//   tagTypes: ['Booking', 'Payment'],
+
 //   endpoints: (builder) => ({
     
-//     // --- USER ENDPOINTS ---
+//     // --- BOOKING ENDPOINTS ---
 
-//     createBooking: builder.mutation<Booking, CreateBookingRequest>({
-//       query: (bookingData) => ({
-//         url: '',
-//         method: 'POST',
-//         body: bookingData,
-//       }),
-//       invalidatesTags: ['Booking', 'Vehicle'],
-//     }),
-
-//     getUserBookings: builder.query<Booking[], void>({
-//       query: () => '/my-bookings',
-//       // CRITICAL FIX: Transform the Flat Backend Data into Nested Frontend Data
+//     getAllBookings: builder.query<BookingDetail[], void>({
+//       query: () => '/bookings',
 //       transformResponse: (response: any) => {
 //         const rawData = Array.isArray(response) ? response : (response?.data || []);
-        
-//         return rawData.map((item: any) => ({
-//           ...item,
-//           // 1. Map booking_status to status
-//           status: item.booking_status, 
-          
-//           // 2. Nest the flat vehicle details into a 'vehicle' object
-//           vehicle: {
-//             manufacturer: item.vehicle_manufacturer,
-//             model: item.vehicle_model,
-//             year: item.vehicle_year,
-//             color: item.vehicle_color,
-//             rental_rate: item.vehicle_rental_rate,
-//             vehicle_type: item.vehicle_type || 'Car', // Fallback
-//             // Backend might not be sending images yet, handle safely
-//             images: item.vehicle_images || item.images || '[]' 
-//           }
+//         // Map backend 'booking_status' to frontend 'status'
+//         return rawData.map((b: any) => ({
+//           ...b,
+//           status: b.booking_status 
 //         }));
 //       },
-//       providesTags: (result = []) => [
-//         ...result.map(({ booking_id }) => ({ type: 'Booking' as const, id: booking_id })),
-//         { type: 'Booking', id: 'LIST' },
-//       ],
+//       providesTags: (result) => 
+//         result 
+//           ? [
+//               ...result.map(({ booking_id }) => ({ type: 'Booking' as const, id: booking_id })),
+//               { type: 'Booking', id: 'LIST' }
+//             ]
+//           : [{ type: 'Booking', id: 'LIST' }],
 //     }),
 
-//     getBookingById: builder.query<Booking, number>({
-//       query: (id) => `/${id}`,
+//     getUserBookings: builder.query<BookingDetail[], void>({
+//       query: () => '/bookings/my-bookings',
+//       transformResponse: (response: any) => {
+//         const rawData = Array.isArray(response) ? response : (response?.data || []);
+//         return rawData.map((b: any) => ({
+//           ...b,
+//           status: b.booking_status 
+//         }));
+//       },
+//       providesTags: (result) => 
+//         result 
+//           ? [
+//               ...result.map(({ booking_id }) => ({ type: 'Booking' as const, id: booking_id })),
+//               { type: 'Booking', id: 'LIST' }
+//             ]
+//           : [{ type: 'Booking', id: 'LIST' }],
+//     }),
+
+//     getBookingById: builder.query<BookingDetail, number>({
+//       query: (id) => `/bookings/${id}`,
+//       transformResponse: (response: any) => {
+//         const booking = response.data || response;
+//         return {
+//           ...booking,
+//           status: booking.booking_status
+//         };
+//       },
 //       providesTags: (_result, _error, id) => [{ type: 'Booking', id }],
 //     }),
 
-//     // ... (rest of your endpoints remain the same)
-//     cancelBooking: builder.mutation<Booking, number>({
-//       query: (id) => ({
-//         url: `/${id}/cancel`,
-//         method: 'POST',
+//     createBooking: builder.mutation<BookingDetail, CreateBookingRequest>({
+//       query: (body) => ({ 
+//         url: '/bookings', 
+//         method: 'POST', 
+//         body 
 //       }),
-//       invalidatesTags: ['Booking'],
+//       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
 //     }),
 
-//     getAllBookings: builder.query<Booking[], void>({
-//       query: () => '', 
-//       transformResponse: (response: any) => {
-//         const rawData = response.data || response || [];
-//         // Apply same transformation for Admin view if needed
-//         return rawData.map((item: any) => ({
-//           ...item,
-//           status: item.booking_status,
-//           vehicle: {
-//             manufacturer: item.vehicle_manufacturer,
-//             model: item.vehicle_model,
-//             year: item.vehicle_year,
-//             rental_rate: item.vehicle_rental_rate,
-//           }
-//         }));
-//       },
-//       providesTags: (result = []) => [
-//         ...result.map(({ booking_id }) => ({ type: 'Booking' as const, id: booking_id })),
-//         { type: 'Booking', id: 'LIST' },
-//       ],
-//     }),
-
-//     updateBookingStatus: builder.mutation<Booking, { id: number; status: string }>({
+//     updateBookingStatus: builder.mutation<void, { id: number; status: string }>({
 //       query: ({ id, status }) => ({
-//         url: `/${id}`, 
-//         method: 'PUT',
-//         body: { status },
+//         url: `/bookings/${id}/status`, 
+//         method: 'PATCH',
+//         body: { booking_status: status },
 //       }),
 //       invalidatesTags: (_result, _error, { id }) => [
 //         { type: 'Booking', id },
-//         { type: 'Booking', id: 'LIST' },
+//         { type: 'Booking', id: 'LIST' }
 //       ],
 //     }),
 
-//     completeBooking: builder.mutation<void, { id: number; return_date: string; condition: string }>({
-//       query: ({ id, ...data }) => ({
-//         url: `/${id}/complete`, 
-//         method: 'POST',
+//     updateBooking: builder.mutation<void, { id: number; data: UpdateBookingRequest }>({
+//       query: ({ id, data }) => ({
+//         url: `/bookings/${id}`,
+//         method: 'PUT',
 //         body: data,
 //       }),
 //       invalidatesTags: (_result, _error, { id }) => [
 //         { type: 'Booking', id },
-//         { type: 'Booking', id: 'LIST' },
+//         { type: 'Booking', id: 'LIST' }
 //       ],
+//     }),
+
+//     completeBooking: builder.mutation<void, { id: number; return_date: string; end_mileage: number }>({
+//       query: ({ id, ...body }) => ({
+//         url: `/bookings/${id}/complete`,
+//         method: 'POST',
+//         body: {
+//             actual_return_date: body.return_date,
+//             end_mileage: body.end_mileage
+//         },
+//       }),
+//       invalidatesTags: (_result, _error, { id }) => [
+//         { type: 'Booking', id },
+//         { type: 'Booking', id: 'LIST' }
+//       ],
+//     }),
+
+//     cancelBooking: builder.mutation<void, number>({
+//       query: (id) => ({ 
+//         url: `/bookings/${id}/cancel`, 
+//         method: 'POST' 
+//       }),
+//       invalidatesTags: (_result, _error, id) => [
+//         { type: 'Booking', id },
+//         { type: 'Booking', id: 'LIST' }
+//       ],
+//     }),
+
+//     // --- PAYMENT ENDPOINTS ---
+
+//     // ✅ NEW: Payment Processing Endpoint (using new service)
+//     processPayment: builder.mutation<PaymentResponse, InitializePaymentRequest>({
+//       query: (body) => ({
+//         url: `/initialize-payment`,
+//         method: 'POST',
+//         body,
+//       }),
+//       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
+//     }),
+
+//     // ✅ NEW: Payment Verification Endpoint
+//     verifyPayment: builder.mutation<PaymentResponse, VerifyPaymentRequest>({
+//       query: (body) => ({
+//         url: `/payments/verify`,
+//         method: 'POST',
+//         body,
+//       }),
+//       invalidatesTags: (_result, _error, { reference }) => [
+//         { type: 'Booking', id: 'LIST' }, 
+//         { type: 'Payment', id: reference }
+//       ],
+//     }),
+
+//     // ✅ NEW: Get Payment by Booking ID
+//     getPaymentByBookingId: builder.query<any, number>({
+//       query: (bookingId) => `/payments/booking/${bookingId}`,
+//       providesTags: (_result, _error, bookingId) => [
+//         { type: 'Payment' as const, id: bookingId }
+//       ],
+//     }),
+
+//     // ✅ OLD: Legacy Payment Endpoint (for backward compatibility)
+//     initializePayment: builder.mutation<PaymentResponse, any>({
+//       query: (data) => ({
+//         url: '/payments/initialize',
+//         method: 'POST',
+//         body: data,
+//       }),
+//       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
+//     }),
+
+//     // ✅ OLD: Process Payment (legacy endpoint - if you still need it)
+//     processPaymentLegacy: builder.mutation<void, ProcessPaymentRequest>({
+//       query: (body) => ({
+//         url: '/bookings/payments/process', // Old endpoint
+//         method: 'POST',
+//         body,
+//       }),
+//       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
+//     }),
+
+
+//     //Receipt
+//         getReceipt: builder.query({
+//       query: ({ bookingId, paymentId }) => ({
+//         url: paymentId 
+//           ? `/payments/${paymentId}/receipt` 
+//           : `/bookings/${bookingId}/latest-receipt`,
+//         method: 'GET',
+//       }),
+//     }),
+
+
+
+//     // AI chat
+//     // sendChatMessage: builder.mutation<{ reply: string; actionPerformed?: string }, { message: string; history: any[]; userId: string }>({
+//     //   query: (body) => ({
+//     //     url: '/chat', //backend url
+//     //     method: 'POST',
+//     //     body,
+//     //   }),
+//     // }),
+
+//     sendChatMessage: builder.mutation<ChatResponse, {
+//       message: string;
+//       history: ChatMessage[];
+//       userId: string | number;
+//     }>({
+//       query: (body) => ({
+//         url: '/chat',
+//         method: 'POST',
+//         body,
+//       }),
 //     }),
 
 //   }),
 // });
 
+
+// // 3. EXPORTS
+
 // export const {
-//   useCreateBookingMutation,
+//   useGetAllBookingsQuery,
 //   useGetUserBookingsQuery,
 //   useGetBookingByIdQuery,
-//   useCancelBookingMutation,
-//   useGetAllBookingsQuery,
+//   useCreateBookingMutation,
 //   useUpdateBookingStatusMutation,
-//   useCompleteBookingMutation
-// } = BookingApi;
-
-
-
-
-
-
-
-
-
-
-
-
+//   useUpdateBookingMutation,
+//   useCompleteBookingMutation,
+//   useCancelBookingMutation,
+//   useSendChatMessageMutation, //chat ai
+  
+//   // Payment endpoints
+//   useProcessPaymentMutation,
+//   useVerifyPaymentMutation,
+//   useGetPaymentByBookingIdQuery,
+//   useInitializePaymentMutation,
+//   useProcessPaymentLegacyMutation,
+//   useGetReceiptQuery
+// } = bookingApi;
 
 
 

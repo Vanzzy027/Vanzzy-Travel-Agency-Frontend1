@@ -1,24 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { useGetUserBookingsQuery, useCancelBookingMutation } from '../../features/api/BookingApi';
-import PaymentModal from '../../Modals/PaymentsModal'; 
+import { useGetUserBookingsQuery, useCancelBookingMutation, type BookingDetail } from '../../features/api/BookingApi'; // Ensure correct casing for bookingApi
+import PaymentModal from '../../Modals/PaymentsModal';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 const UserBookingsPage = () => {
   // 1. API Hooks
-  const { data: bookings, isLoading, error } = useGetUserBookingsQuery();
+  //const { data: bookings, isLoading, error } = useGetUserBookingsQuery();
+  
+  const { data: bookings, isLoading, error, refetch } = useGetUserBookingsQuery();
+
   const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
   
-  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<number | null>(null);
-
-  // Debug: Log the data we receive
+  // 🔴 CHANGE 1: Store the full booking object, not just ID
+  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<BookingDetail | null>(null);
+  
+  // Debug
   useEffect(() => {
     if (bookings) {
-      console.log('Bookings data received:', bookings);
-      console.log('First booking sample:', bookings[0]);
+      console.log('Bookings loaded:', bookings.length);
     }
   }, [bookings]);
-
+  
   // --- ACTIONS ---
   const handleCancelBooking = async (bookingId: number) => {
     if (!window.confirm("Are you sure you want to cancel this booking?")) return;
@@ -45,7 +48,6 @@ const UserBookingsPage = () => {
       <div className="text-center text-[#F57251] p-8 border border-[#F57251] rounded-2xl bg-[#F57251]/10">
         <h2 className="text-2xl font-bold mb-2">Connection Error</h2>
         <p>Could not load bookings. Please check your internet connection.</p>
-        <p className="text-sm mt-2">Error: {JSON.stringify(error)}</p>
       </div>
     </div>
   );
@@ -54,7 +56,6 @@ const UserBookingsPage = () => {
   const getVehicleImage = (booking: BookingDetail) => {
     const images = booking.vehicle_images;
     if (!images) return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80';
-    
     try {
       if (Array.isArray(images)) return images[0];
       const parsed = JSON.parse(images);
@@ -71,26 +72,21 @@ const UserBookingsPage = () => {
     });
   };
 
-  // --- FILTERING DATA (UPDATED FOR BACKEND FIELDS) ---
+  // --- FILTERING ---
   const pendingBookings = bookings?.filter(b => b.status === 'Pending') || [];
-  const activeBookings = bookings?.filter(b => b.status === 'Confirmed') || [];
-  const historyBookings = bookings?.filter(b => 
-    b.status === 'Completed' || b.status === 'Cancelled'
-  ) || [];
-
+  const activeBookings = bookings?.filter(b => b.status === 'Confirmed' || b.status === 'Active') || [];
+  const historyBookings = bookings?.filter(b => b.status === 'Completed' || b.status === 'Cancelled') || [];
   const totalSpent = bookings?.reduce((acc, curr) => acc + Number(curr.total_amount), 0) || 0;
 
   return (
     <div className="min-h-screen bg-[#001524] p-6 md:p-10 text-[#E9E6DD] pb-20">
       
-      {/* HEADER & STATS */}
+      {/* HEADER */}
       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
         <div>
           <h1 className="text-3xl font-bold text-[#E9E6DD]">My Bookings</h1>
           <p className="text-[#C4AD9D] mt-1">Manage your trips, payments, and history.</p>
         </div>
-        
-        {/* Mini Stats Card */}
         <div className="flex gap-4">
           <div className="bg-[#0f2434] px-6 py-3 rounded-xl border border-[#445048]">
             <p className="text-xs text-[#C4AD9D] uppercase">Total Trips</p>
@@ -103,28 +99,19 @@ const UserBookingsPage = () => {
         </div>
       </header>
 
-      {/* DEBUG INFO - Remove after testing */}
-      {bookings && bookings.length > 0 && (
-        <div className="mb-4 p-4 bg-yellow-900/20 border border-yellow-700 rounded">
-          <p className="text-yellow-400 text-sm">
-            Debug: Found {bookings.length} bookings. First booking status: {bookings[0].status}
-          </p>
-        </div>
-      )}
-
-      {/* --- EMPTY STATE --- */}
+      {/* EMPTY STATE */}
       {bookings && bookings.length === 0 && (
         <div className="text-center py-20 bg-[#0f2434]/50 rounded-3xl border border-[#445048] border-dashed">
           <div className="text-5xl mb-4">🚗</div>
           <h3 className="text-xl font-bold text-white mb-2">No trips yet?</h3>
-          <p className="text-[#C4AD9D] mb-6">You haven't booked any vehicles yet. Start your journey today!</p>
-          <Link to="/UserDashboard/vehicles" className="bg-[#F57251] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#d65f41] transition-all">
+          <p className="text-[#C4AD9D] mb-6">You haven't booked any vehicles yet.</p>
+          <Link to="/vehicles" className="bg-[#F57251] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#d65f41] transition-all">
             Browse Vehicles
           </Link>
         </div>
       )}
 
-      {/* --- SECTION 1: PENDING PAYMENTS (High Priority) --- */}
+      {/* SECTION 1: PENDING PAYMENTS */}
       {pendingBookings.length > 0 && (
         <section className="mb-12">
           <h2 className="text-xl font-bold mb-6 text-[#F57251] flex items-center gap-2 animate-pulse">
@@ -134,45 +121,25 @@ const UserBookingsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {pendingBookings.map((booking) => (
               <div key={booking.booking_id} className="bg-[#0f2434] border-2 border-[#F57251] rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(245,114,81,0.15)] flex flex-col">
-                
-                {/* Header */}
                 <div className="bg-[#F57251]/10 p-4 border-b border-[#F57251]/30 flex justify-between items-center">
                   <span className="text-[#F57251] font-bold text-xs uppercase tracking-wider">Awaiting Payment</span>
                   <span className="text-2xl font-bold text-[#E9E6DD]">${booking.total_amount}</span>
                 </div>
-
                 <div className="p-6 flex-grow flex flex-col">
-                  {/* Car Details */}
                   <div className="flex gap-4 mb-6">
-                    <img 
-                      src={getVehicleImage(booking)} 
-                      alt="Vehicle" 
-                      className="w-24 h-24 object-cover rounded-xl bg-gray-800 border border-[#445048]"
-                    />
+                    <img src={getVehicleImage(booking)} alt="Vehicle" className="w-24 h-24 object-cover rounded-xl bg-gray-800" />
                     <div>
-                      <h3 className="font-bold text-lg text-white leading-tight mb-1">
-                        {booking.vehicle_manufacturer} {booking.vehicle_model}
-                      </h3>
-                      <p className="text-xs text-[#027480] font-bold bg-[#027480]/10 px-2 py-1 rounded w-fit mb-2">
-                        {booking.vehicle_year}
-                      </p>
-                      <p className="text-sm text-[#C4AD9D]">
-                         {formatDate(booking.booking_date)} <br/>⬇<br/> {formatDate(booking.return_date)}
-                      </p>
+                      <h3 className="font-bold text-lg text-white leading-tight mb-1">{booking.vehicle_manufacturer} {booking.vehicle_model}</h3>
+                      <p className="text-xs text-[#027480] font-bold bg-[#027480]/10 px-2 py-1 rounded w-fit mb-2">{booking.vehicle_year}</p>
+                      <p className="text-sm text-[#C4AD9D]">{formatDate(booking.booking_date)} ⬇ {formatDate(booking.return_date)}</p>
                     </div>
                   </div>
-
-                  {/* Action Buttons (Pay + Cancel) */}
                   <div className="mt-auto flex gap-3">
+                     <button onClick={() => handleCancelBooking(booking.booking_id)} disabled={isCancelling} className="flex-1 border border-red-500/50 text-red-400 py-3 rounded-xl font-bold hover:bg-red-500/10 transition-all text-sm">Cancel</button>
+                     
+                     {/* 🔴 CHANGE 2: Set the FULL object on click */}
                      <button 
-                       onClick={() => handleCancelBooking(booking.booking_id)}
-                       disabled={isCancelling}
-                       className="flex-1 border border-red-500/50 text-red-400 py-3 rounded-xl font-bold hover:bg-red-500/10 transition-all text-sm"
-                     >
-                       Cancel
-                     </button>
-                     <button 
-                       onClick={() => setSelectedBookingForPayment(booking.booking_id)}
+                       onClick={() => setSelectedBookingForPayment(booking)}
                        className="flex-[2] bg-[#F57251] hover:bg-[#d65f41] text-white py-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
                      >
                        <span>Pay Now</span>
@@ -186,7 +153,7 @@ const UserBookingsPage = () => {
         </section>
       )}
 
-      {/* --- SECTION 2: ACTIVE & UPCOMING TRIPS --- */}
+      {/* SECTION 2: ACTIVE TRIPS */}
       {activeBookings.length > 0 && (
         <section className="mb-12">
           <h2 className="text-xl font-bold mb-6 text-[#027480] flex items-center gap-2">
@@ -195,28 +162,13 @@ const UserBookingsPage = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeBookings.map((booking) => (
               <div key={booking.booking_id} className="bg-[#001524] border border-[#027480] rounded-2xl p-6 relative group hover:bg-[#022a35] transition-colors">
-                <div className="absolute top-4 right-4 bg-[#027480] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                  {booking.status}
-                </div>
-                
-                <h3 className="text-lg font-bold text-white mb-1">
-                  {booking.vehicle_manufacturer} {booking.vehicle_model}
-                </h3>
+                <div className="absolute top-4 right-4 bg-[#027480] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">{booking.status}</div>
+                <h3 className="text-lg font-bold text-white mb-1">{booking.vehicle_manufacturer} {booking.vehicle_model}</h3>
                 <p className="text-[#C4AD9D] text-xs uppercase tracking-wide mb-4">Ref: {booking.booking_id}</p>
-
                 <div className="bg-[#000d16] p-4 rounded-xl border border-[#445048] space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#445048]">Pick-up</span>
-                    <span className="text-[#E9E6DD] font-medium">{formatDate(booking.booking_date)}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-[#445048]">Return</span>
-                    <span className="text-[#E9E6DD] font-medium">{formatDate(booking.return_date)}</span>
-                  </div>
-                  <div className="border-t border-[#445048] pt-2 mt-2 flex justify-between items-center">
-                    <span className="text-[#C4AD9D] text-xs">Total Paid</span>
-                    <span className="font-bold text-[#027480] text-lg">${booking.total_amount}</span>
-                  </div>
+                  <div className="flex justify-between text-sm"><span className="text-[#445048]">Pick-up</span><span className="text-[#E9E6DD] font-medium">{formatDate(booking.booking_date)}</span></div>
+                  <div className="flex justify-between text-sm"><span className="text-[#445048]">Return</span><span className="text-[#E9E6DD] font-medium">{formatDate(booking.return_date)}</span></div>
+                  <div className="border-t border-[#445048] pt-2 mt-2 flex justify-between items-center"><span className="text-[#C4AD9D] text-xs">Total Paid</span><span className="font-bold text-[#027480] text-lg">${booking.total_amount}</span></div>
                 </div>
               </div>
             ))}
@@ -224,60 +176,84 @@ const UserBookingsPage = () => {
         </section>
       )}
 
-      {/* --- SECTION 3: HISTORY --- */}
+      {/* SECTION 3: HISTORY */}
       {historyBookings.length > 0 && (
         <section>
-          <h2 className="text-xl font-bold mb-6 text-[#445048] flex items-center gap-2">
-            <span className="bg-[#445048]/20 p-1 rounded">📜</span> History
-          </h2>
+          <h2 className="text-xl font-bold mb-6 text-[#445048] flex items-center gap-2"><span className="bg-[#445048]/20 p-1 rounded">📜</span> History</h2>
           <div className="bg-[#0f2434] rounded-2xl border border-[#445048] overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#001524] text-[#C4AD9D] text-xs uppercase tracking-wider border-b border-[#445048]">
-                    <th className="py-4 px-6">Ref ID</th>
-                    <th className="py-4 px-6">Vehicle</th>
-                    <th className="py-4 px-6">Dates</th>
-                    <th className="py-4 px-6">Total</th>
-                    <th className="py-4 px-6">Status</th>
+            <table className="w-full text-left border-collapse">
+              <thead><tr className="bg-[#001524] text-[#C4AD9D] text-xs uppercase tracking-wider border-b border-[#445048]"><th className="py-4 px-6">Ref ID</th><th className="py-4 px-6">Vehicle</th><th className="py-4 px-6">Dates</th><th className="py-4 px-6">Total</th><th className="py-4 px-6">Status</th></tr></thead>
+              <tbody className="text-sm">
+                {historyBookings.map((booking) => (
+                  <tr key={booking.booking_id} className="border-b border-[#445048]/50 hover:bg-[#152e40] transition-colors last:border-0">
+                    <td className="py-4 px-6 text-[#445048] font-mono">#{booking.booking_id}</td>
+                    <td className="py-4 px-6 font-medium text-white">{booking.vehicle_manufacturer} {booking.vehicle_model}</td>
+                    <td className="py-4 px-6 text-[#C4AD9D]">{formatDate(booking.booking_date)} - {formatDate(booking.return_date)}</td>
+                    <td className="py-4 px-6 font-bold text-[#E9E6DD]">${booking.total_amount}</td>
+                    <td className="py-4 px-6"><span className={`px-2 py-1 rounded text-xs font-bold ${booking.status === 'Completed' ? 'bg-green-900/30 text-green-400 border border-green-900' : 'bg-red-900/30 text-red-400 border border-red-900'}`}>{booking.status}</span></td>
                   </tr>
-                </thead>
-                <tbody className="text-sm">
-                  {historyBookings.map((booking) => (
-                    <tr key={booking.booking_id} className="border-b border-[#445048]/50 hover:bg-[#152e40] transition-colors last:border-0">
-                      <td className="py-4 px-6 text-[#445048] font-mono">#{booking.booking_id}</td>
-                      <td className="py-4 px-6 font-medium text-white">
-                        {booking.vehicle_manufacturer} {booking.vehicle_model}
-                      </td>
-                      <td className="py-4 px-6 text-[#C4AD9D]">
-                        {formatDate(booking.booking_date)} - {formatDate(booking.return_date)}
-                      </td>
-                      <td className="py-4 px-6 font-bold text-[#E9E6DD]">${booking.total_amount}</td>
-                      <td className="py-4 px-6">
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${
-                          booking.status === 'Completed' 
-                            ? 'bg-green-900/30 text-green-400 border border-green-900' 
-                            : 'bg-red-900/30 text-red-400 border border-red-900'
-                        }`}>
-                          {booking.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       )}
 
-      {/* --- PAYMENT MODAL --- */}
-      {selectedBookingForPayment && (
+      {/* 🔴 CHANGE 3: Update Modal Props to match the new definition */}
+      {/* {selectedBookingForPayment && (
         <PaymentModal 
-          bookingId={selectedBookingForPayment} 
-          onClose={() => setSelectedBookingForPayment(null)} 
+          isOpen={!!selectedBookingForPayment}
+          onClose={() => setSelectedBookingForPayment(null)}
+          bookingData={{
+            booking_id: selectedBookingForPayment.booking_id,
+            total_amount: selectedBookingForPayment.total_amount
+          }}
+          userData={{
+            // These fields exist because of the JOIN in your API response
+            user_id: selectedBookingForPayment.user_id,
+            email: selectedBookingForPayment.user_email,
+            first_name: selectedBookingForPayment.user_first_name,
+            last_name: selectedBookingForPayment.user_last_name,
+            phone: selectedBookingForPayment.user_contact_phone
+          }}
+          vehicleDetails={{
+            // These fields exist because of the JOIN in your API response
+            make: selectedBookingForPayment.vehicle_manufacturer,
+            model: selectedBookingForPayment.vehicle_model,
+            year: selectedBookingForPayment.vehicle_year
+          }}
         />
-      )}
+      )} */}
+{selectedBookingForPayment && (
+  <PaymentModal 
+    isOpen={!!selectedBookingForPayment}
+    onClose={() => setSelectedBookingForPayment(null)}
+    onSuccess={() => {
+      // 🔴 This triggers a refetch of bookings data
+      refetch();
+      toast.success("Booking status updated!");
+    }}
+    bookingData={{
+      booking_id: selectedBookingForPayment.booking_id,
+      total_amount: selectedBookingForPayment.total_amount
+    }}
+    userData={{
+      user_id: selectedBookingForPayment.user_id,
+      email: selectedBookingForPayment.user_email,
+      first_name: selectedBookingForPayment.user_first_name,
+      last_name: selectedBookingForPayment.user_last_name,
+      phone: selectedBookingForPayment.user_contact_phone
+    }}
+    vehicleDetails={{
+      make: selectedBookingForPayment.vehicle_manufacturer,
+      model: selectedBookingForPayment.vehicle_model,
+      year: selectedBookingForPayment.vehicle_year
+    }}
+  />
+)}
+
+
+
     </div>
   );
 };
@@ -289,398 +265,235 @@ export default UserBookingsPage;
 
 
 
-// import React, { useState } from 'react';
-// import { 
-//   useGetAllBookingsQuery, 
-//   useUpdateBookingStatusMutation, 
-//   useUpdateBookingMutation,
-//   useCompleteBookingMutation,
-//   type BookingDetail
-// } from '../../features/api/BookingApi';
-// import { 
-//   CheckCircle, XCircle, Calendar,
-//   Car, Search, Filter, Edit, Clock
-// } from 'lucide-react';
+// import React, { useState, useEffect } from 'react';
+// import { useGetUserBookingsQuery, useCancelBookingMutation, type BookingDetail } from '../../features/api/BookingApi'; // Ensure correct casing for bookingApi
+// import PaymentModal from '../../Modals/PaymentsModal';
+// import { Link } from 'react-router-dom';
 // import { toast } from 'sonner';
 
-// const BookingsManagement: React.FC = () => {
-//   // --- API HOOKS ---
-//   // We pass void/empty object to query hooks
-//   const { data: bookings, isLoading } = useGetAllBookingsQuery();
+// const UserBookingsPage = () => {
+//   // 1. API Hooks
+//   const { data: bookings, isLoading, error } = useGetUserBookingsQuery();
+//   const [cancelBooking, { isLoading: isCancelling }] = useCancelBookingMutation();
   
-//   // Mutations
-//   const [updateStatus] = useUpdateBookingStatusMutation();
-//   const [updateBooking] = useUpdateBookingMutation();
-//   const [completeBooking] = useCompleteBookingMutation();
+//   // 🔴 CHANGE 1: Store the full booking object, not just ID
+//   const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<BookingDetail | null>(null);
 
-//   // --- STATE ---
-//   const [searchTerm, setSearchTerm] = useState('');
-//   const [statusFilter, setStatusFilter] = useState<string>('All');
+//   // Debug
+//   useEffect(() => {
+//     if (bookings) {
+//       console.log('Bookings loaded:', bookings.length);
+//     }
+//   }, [bookings]);
   
-//   // Modals State
-//   const [selectedBooking, setSelectedBooking] = useState<BookingDetail | null>(null);
-//   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-//   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
-  
-//   // Form State
-//   // FIXED: Initialized with start/end to match database columns for "Rental Period"
-//   const [editFormData, setEditFormData] = useState({ start_date: '', end_date: '' });
-  
-//   const [completionData, setCompletionData] = useState({ 
-//     end_mileage: 0, 
-//     return_date: new Date().toISOString().split('T')[0] 
-//   });
+//   // --- ACTIONS ---
+//   const handleCancelBooking = async (bookingId: number) => {
+//     if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+//     try {
+//       await cancelBooking(bookingId).unwrap();
+//       toast.success("Booking cancelled successfully.");
+//     } catch (err) {
+//       toast.error("Failed to cancel booking.");
+//     }
+//   };
+
+//   // --- LOADING & ERROR STATES ---
+//   if (isLoading) return (
+//     <div className="flex h-screen items-center justify-center bg-[#001524]">
+//       <div className="flex flex-col items-center gap-4">
+//         <div className="w-12 h-12 border-4 border-[#027480] border-t-transparent rounded-full animate-spin"></div>
+//         <div className="text-[#027480] text-xl font-bold animate-pulse">Loading your journey...</div>
+//       </div>
+//     </div>
+//   );
+
+//   if (error) return (
+//     <div className="flex h-screen items-center justify-center bg-[#001524]">
+//       <div className="text-center text-[#F57251] p-8 border border-[#F57251] rounded-2xl bg-[#F57251]/10">
+//         <h2 className="text-2xl font-bold mb-2">Connection Error</h2>
+//         <p>Could not load bookings. Please check your internet connection.</p>
+//       </div>
+//     </div>
+//   );
 
 //   // --- HELPERS ---
+//   const getVehicleImage = (booking: BookingDetail) => {
+//     const images = booking.vehicle_images;
+//     if (!images) return 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80';
+//     try {
+//       if (Array.isArray(images)) return images[0];
+//       const parsed = JSON.parse(images);
+//       return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : parsed;
+//     } catch (e) { 
+//       return images.startsWith('http') ? images : 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=600&q=80';
+//     }
+//   };
 
-//   const formatDate = (dateString: string | undefined | null) => {
-//     if (!dateString) return '—';
-//     const date = new Date(dateString);
-//     if (isNaN(date.getTime())) return 'Invalid Date';
-//     return date.toLocaleDateString('en-US', { 
-//       year: 'numeric', month: 'short', day: 'numeric' 
+//   const formatDate = (dateString: string) => {
+//     if (!dateString) return 'TBD';
+//     return new Date(dateString).toLocaleDateString('en-US', { 
+//       month: 'short', day: 'numeric', year: 'numeric' 
 //     });
-//   };
-
-//   const parseImage = (jsonString: string | undefined | null): string | null => {
-//     if (!jsonString || jsonString === '[]') return null;
-//     try {
-//       if (Array.isArray(jsonString)) return jsonString[0];
-//       const parsed = JSON.parse(jsonString);
-//       return Array.isArray(parsed) && parsed.length > 0 ? parsed[0] : null;
-//     } catch {
-//       return jsonString.startsWith('http') ? jsonString : null;
-//     }
-//   };
-
-//   // --- ACTIONS ---
-
-//   const handleStatusChange = async (id: number, newStatus: string) => {
-//     if (!window.confirm(`Mark booking #${id} as ${newStatus}?`)) return;
-
-//     try {
-//       await updateStatus({ id, status: newStatus }).unwrap();
-//       toast.success(`Booking status updated to ${newStatus}`);
-//     } catch (err: any) {
-//       console.error("Status Update Failed", err);
-//       if (err.status === 404) {
-//         toast.error("Endpoint not found. Check Backend Routes.");
-//       } else {
-//         toast.error("Failed to update status");
-//       }
-//     }
-//   };
-
-//   const handleEditSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (!selectedBooking) return;
-//     try {
-//       // FIXED: Used start_date and end_date to match the State and API Interface
-//       await updateBooking({ 
-//         id: selectedBooking.booking_id, 
-//         data: { 
-//           start_date: editFormData.start_date, 
-//           end_date: editFormData.end_date 
-//         } 
-//       }).unwrap();
-//       toast.success("Booking dates updated");
-//       setIsEditModalOpen(false);
-//     } catch (err) {
-//       console.error(err);
-//       toast.error("Failed to update booking");
-//     }
-//   };
-
-//   const handleCompletionSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (!selectedBooking) return;
-//     try {
-//       await completeBooking({ 
-//         id: selectedBooking.booking_id, 
-//         return_date: completionData.return_date,
-//         end_mileage: completionData.end_mileage
-//       }).unwrap();
-//       toast.success("Vehicle returned successfully");
-//       setIsCompleteModalOpen(false);
-//     } catch (err) {
-//       console.error(err);
-//       toast.error("Failed to complete booking");
-//     }
-//   };
-
-//   const openEditModal = (booking: BookingDetail) => {
-//     setSelectedBooking(booking);
-//     // FIXED: Mapping API 'start_date' to form state
-//     setEditFormData({
-//       start_date: booking.booking_date ? new Date(booking.start_date).toISOString().split('T')[0] : '',
-//       end_date: booking.end_date ? new Date(booking.end_date).toISOString().split('T')[0] : ''
-//     });
-//     setIsEditModalOpen(true);
 //   };
 
 //   // --- FILTERING ---
-//   const filteredBookings = bookings?.filter(b => {
-//     // Check fields safely
-//     const matchesSearch = 
-//       b.user_first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       b.user_last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       b.vehicle_model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       b.vehicle_license_plate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-//       String(b.booking_id).includes(searchTerm);
-    
-//     // Status filter
-//     const matchesStatus = statusFilter === 'All' || b.booking_status === statusFilter;
-    
-//     return matchesSearch && matchesStatus;
-//   });
-
-//   if (isLoading) return <div className="p-8 text-[#027480] animate-pulse font-bold text-xl">Loading Bookings...</div>;
+//   const pendingBookings = bookings?.filter(b => b.status === 'Pending') || [];
+//   const activeBookings = bookings?.filter(b => b.status === 'Confirmed' || b.status === 'Active') || [];
+//   const historyBookings = bookings?.filter(b => b.status === 'Completed' || b.status === 'Cancelled') || [];
+//   const totalSpent = bookings?.reduce((acc, curr) => acc + Number(curr.total_amount), 0) || 0;
 
 //   return (
-//     <div className="space-y-6">
+//     <div className="min-h-screen bg-[#001524] p-6 md:p-10 text-[#E9E6DD] pb-20">
       
-//       {/* HEADER & FILTERS */}
-//       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+//       {/* HEADER */}
+//       <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
 //         <div>
-//           <h1 className="text-3xl font-bold text-[#001524]">Bookings Management</h1>
-//           <p className="text-[#445048]">Monitor rentals and manage returns.</p>
+//           <h1 className="text-3xl font-bold text-[#E9E6DD]">My Bookings</h1>
+//           <p className="text-[#C4AD9D] mt-1">Manage your trips, payments, and history.</p>
 //         </div>
-
-//         <div className="flex gap-3 w-full md:w-auto">
-//           <div className="relative">
-//             <Filter className="absolute left-3 top-3 text-gray-400" size={16} />
-//             <select 
-//               value={statusFilter}
-//               onChange={(e) => setStatusFilter(e.target.value)}
-//               className="pl-10 pr-8 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#027480] appearance-none bg-white cursor-pointer"
-//             >
-//               <option value="All">All Status</option>
-//               <option value="Pending">Pending</option>
-//               <option value="Confirmed">Confirmed</option>
-//               <option value="Active">Active</option>
-//               <option value="Completed">Completed</option>
-//               <option value="Cancelled">Cancelled</option>
-//             </select>
+//         <div className="flex gap-4">
+//           <div className="bg-[#0f2434] px-6 py-3 rounded-xl border border-[#445048]">
+//             <p className="text-xs text-[#C4AD9D] uppercase">Total Trips</p>
+//             <p className="text-xl font-bold text-white">{bookings?.length || 0}</p>
 //           </div>
-
-//           <div className="relative flex-1 md:w-64">
-//             <Search className="absolute left-3 top-3 text-gray-400" size={16} />
-//             <input 
-//               type="text" 
-//               placeholder="Search ID, Name, Plate..." 
-//               value={searchTerm}
-//               onChange={(e) => setSearchTerm(e.target.value)}
-//               className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#027480]"
-//             />
+//           <div className="bg-[#0f2434] px-6 py-3 rounded-xl border border-[#445048]">
+//             <p className="text-xs text-[#C4AD9D] uppercase">Total Spent</p>
+//             <p className="text-xl font-bold text-[#027480]">${totalSpent.toLocaleString()}</p>
 //           </div>
 //         </div>
-//       </div>
+//       </header>
 
-//       {/* TABLE */}
-//       <div className="bg-white rounded-xl shadow-lg border border-[#445048]/20 overflow-hidden">
-//         <div className="overflow-x-auto">
-//           <table className="w-full text-left border-collapse">
-//             <thead className="bg-[#001524] text-[#E9E6DD]">
-//               <tr>
-//                 <th className="p-4 font-semibold">Vehicle</th>
-//                 <th className="p-4 font-semibold">Customer</th>
-//                 <th className="p-4 font-semibold">Schedule</th>
-//                 <th className="p-4 font-semibold">Status</th>
-//                 <th className="p-4 font-semibold text-right">Actions</th>
-//               </tr>
-//             </thead>
-//             <tbody className="divide-y divide-gray-100">
-//               {filteredBookings?.map((b) => (
-//                 <tr key={b.booking_id} className="hover:bg-gray-50 transition-colors group">
-                  
-//                   {/* 1. Vehicle Column */}
-//                   <td className="p-4">
-//                     <div className="flex items-center gap-3">
-//                       <div className="w-16 h-12 bg-gray-200 rounded overflow-hidden flex-shrink-0 border border-gray-300">
-//                         {parseImage(b.vehicle_images) ? (
-//                           <img 
-//                             src={parseImage(b.vehicle_images)!} 
-//                             alt="Car" 
-//                             className="w-full h-full object-cover" 
-//                           />
-//                         ) : (
-//                           <div className="w-full h-full flex items-center justify-center text-gray-400">
-//                             <Car size={20}/>
-//                           </div>
-//                         )}
-//                       </div>
-//                       <div>
-//                         <div className="font-bold text-[#001524]">{b.vehicle_manufacturer} {b.vehicle_model}</div>
-//                         <div className="text-xs font-mono bg-gray-100 px-1 rounded inline-block text-gray-600 border border-gray-200">
-//                           {b.vehicle_license_plate}
-//                         </div>
-//                       </div>
-//                     </div>
-//                   </td>
-
-//                   {/* 2. Customer Column */}
-//                   <td className="p-4">
-//                     <div className="flex items-center gap-3">
-//                       <div className="w-8 h-8 rounded-full bg-[#027480]/10 text-[#027480] flex items-center justify-center font-bold text-xs uppercase">
-//                         {b.user_first_name?.[0] || 'U'}{b.user_last_name?.[0] || ''}
-//                       </div>
-//                       <div>
-//                         <div className="font-semibold text-gray-800">{b.user_first_name} {b.user_last_name}</div>
-//                         <div className="text-xs text-gray-500">{b.user_contact_phone}</div>
-//                       </div>
-//                     </div>
-//                   </td>
-
-//                   {/* 3. Schedule Column */}
-//                   <td className="p-4">
-//                     <div className="flex flex-col text-sm">
-//                       <div className="flex items-center gap-1 text-gray-700">
-//                         <Calendar size={14} className="text-[#027480]"/> 
-//                         {/* FIXED: Using 'end_date' here instead of undefined 'return_date' */}
-//                         {formatDate(b.start_date)} - {formatDate(b.end_date)}
-//                       </div>
-//                       <div className="font-bold text-[#001524] mt-1 text-xs">
-//                         Total: ${Number(b.total_amount).toLocaleString()}
-//                       </div>
-//                     </div>
-//                   </td>
-
-//                   {/* 4. Status Column */}
-//                   <td className="p-4">
-//                     <span className={`px-3 py-1 rounded-full text-xs font-bold border inline-block ${
-//                       b.booking_status === 'Completed' ? 'bg-gray-100 text-gray-600 border-gray-200' :
-//                       b.booking_status === 'Active' ? 'bg-[#027480]/10 text-[#027480] border-[#027480]/20' :
-//                       b.booking_status === 'Confirmed' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-//                       b.booking_status === 'Cancelled' ? 'bg-red-100 text-red-700 border-red-200' :
-//                       'bg-yellow-100 text-yellow-700 border-yellow-200'
-//                     }`}>
-//                       {b.booking_status || 'Unknown'}
-//                     </span>
-//                   </td>
-
-//                   {/* 5. Actions Column */}
-//                   <td className="p-4 text-right">
-//                     <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      
-//                       {/* EDIT DATES */}
-//                       {['Pending', 'Confirmed'].includes(b.booking_status) && (
-//                         <button onClick={() => openEditModal(b)} className="p-2 text-gray-500 hover:bg-gray-200 rounded tooltip" title="Edit Dates">
-//                           <Edit size={16} />
-//                         </button>
-//                       )}
-
-//                       {/* APPROVE (Pending -> Confirmed) */}
-//                       {b.booking_status === 'Pending' && (
-//                         <button onClick={() => handleStatusChange(b.booking_id, 'Confirmed')} className="p-2 text-green-600 hover:bg-green-100 rounded font-bold" title="Approve">
-//                           <CheckCircle size={16} />
-//                         </button>
-//                       )}
-
-//                       {/* START RENTAL (Confirmed -> Active) */}
-//                       {b.booking_status === 'Confirmed' && (
-//                         <button onClick={() => handleStatusChange(b.booking_id, 'Active')} className="p-2 text-blue-600 hover:bg-blue-100 rounded font-bold flex items-center gap-1" title="Start Trip">
-//                           <Clock size={16} /> 
-//                         </button>
-//                       )}
-
-//                       {/* RETURN CAR (Active -> Completed) */}
-//                       {b.booking_status === 'Active' && (
-//                         <button onClick={() => { setSelectedBooking(b); setIsCompleteModalOpen(true); }} className="p-2 text-[#027480] hover:bg-[#027480]/10 rounded font-bold flex items-center gap-1" title="Return Vehicle">
-//                           <CheckCircle size={16} /> 
-//                         </button>
-//                       )}
-
-//                       {/* CANCEL (Not Completed/Cancelled) */}
-//                       {!['Completed', 'Cancelled'].includes(b.booking_status) && (
-//                         <button onClick={() => handleStatusChange(b.booking_id, 'Cancelled')} className="p-2 text-red-500 hover:bg-red-100 rounded" title="Cancel">
-//                           <XCircle size={16} />
-//                         </button>
-//                       )}
-//                     </div>
-//                   </td>
-//                 </tr>
-//               ))}
-//             </tbody>
-//           </table>
-//         </div>
-//       </div>
-
-//       {/* --- EDIT MODAL --- */}
-//       {isEditModalOpen && selectedBooking && (
-//         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-//           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-//             <h3 className="text-xl font-bold mb-4 text-[#001524]">Edit Booking Schedule</h3>
-//             <form onSubmit={handleEditSubmit} className="space-y-4">
-//               <div>
-//                 <label className="text-xs font-bold text-gray-500">Start Date</label>
-//                 {/* FIXED: binding to editFormData.start_date */}
-//                 <input 
-//                   type="date" 
-//                   required 
-//                   className="w-full border p-2 rounded" 
-//                   value={editFormData.start_date} 
-//                   onChange={e => setEditFormData({...editFormData, start_date: e.target.value})} 
-//                 />
-//               </div>
-//               <div>
-//                 <label className="text-xs font-bold text-gray-500">End Date</label>
-//                 {/* FIXED: binding to editFormData.end_date */}
-//                 <input 
-//                   type="date" 
-//                   required 
-//                   className="w-full border p-2 rounded" 
-//                   value={editFormData.end_date} 
-//                   onChange={e => setEditFormData({...editFormData, end_date: e.target.value})} 
-//                 />
-//               </div>
-//               <div className="flex gap-3 pt-4">
-//                 <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 text-gray-500">Cancel</button>
-//                 <button type="submit" className="flex-1 bg-[#027480] text-white py-2 rounded font-bold">Save Changes</button>
-//               </div>
-//             </form>
-//           </div>
+//       {/* EMPTY STATE */}
+//       {bookings && bookings.length === 0 && (
+//         <div className="text-center py-20 bg-[#0f2434]/50 rounded-3xl border border-[#445048] border-dashed">
+//           <div className="text-5xl mb-4">🚗</div>
+//           <h3 className="text-xl font-bold text-white mb-2">No trips yet?</h3>
+//           <p className="text-[#C4AD9D] mb-6">You haven't booked any vehicles yet.</p>
+//           <Link to="/vehicles" className="bg-[#F57251] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#d65f41] transition-all">
+//             Browse Vehicles
+//           </Link>
 //         </div>
 //       )}
 
-//       {/* --- COMPLETE MODAL --- */}
-//       {isCompleteModalOpen && selectedBooking && (
-//         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-//           <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-//             <h3 className="text-xl font-bold mb-1 text-[#001524]">Complete Rental</h3>
-//             <p className="text-sm text-gray-500 mb-4">Car: {selectedBooking.vehicle_model} ({selectedBooking.vehicle_license_plate})</p>
-//             <form onSubmit={handleCompletionSubmit} className="space-y-4">
-//               <div>
-//                 <label className="text-xs font-bold text-gray-500">Return Date</label>
-//                 <input 
-//                   type="date" 
-//                   required 
-//                   className="w-full border p-2 rounded" 
-//                   value={completionData.return_date} 
-//                   onChange={e => setCompletionData({...completionData, return_date: e.target.value})} 
-//                 />
+//       {/* SECTION 1: PENDING PAYMENTS */}
+//       {pendingBookings.length > 0 && (
+//         <section className="mb-12">
+//           <h2 className="text-xl font-bold mb-6 text-[#F57251] flex items-center gap-2 animate-pulse">
+//             <span className="bg-[#F57251]/20 p-1 rounded">⚠️</span> Action Required: Payment Pending
+//           </h2>
+
+//           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+//             {pendingBookings.map((booking) => (
+//               <div key={booking.booking_id} className="bg-[#0f2434] border-2 border-[#F57251] rounded-2xl overflow-hidden shadow-[0_0_20px_rgba(245,114,81,0.15)] flex flex-col">
+//                 <div className="bg-[#F57251]/10 p-4 border-b border-[#F57251]/30 flex justify-between items-center">
+//                   <span className="text-[#F57251] font-bold text-xs uppercase tracking-wider">Awaiting Payment</span>
+//                   <span className="text-2xl font-bold text-[#E9E6DD]">${booking.total_amount}</span>
+//                 </div>
+//                 <div className="p-6 flex-grow flex flex-col">
+//                   <div className="flex gap-4 mb-6">
+//                     <img src={getVehicleImage(booking)} alt="Vehicle" className="w-24 h-24 object-cover rounded-xl bg-gray-800" />
+//                     <div>
+//                       <h3 className="font-bold text-lg text-white leading-tight mb-1">{booking.vehicle_manufacturer} {booking.vehicle_model}</h3>
+//                       <p className="text-xs text-[#027480] font-bold bg-[#027480]/10 px-2 py-1 rounded w-fit mb-2">{booking.vehicle_year}</p>
+//                       <p className="text-sm text-[#C4AD9D]">{formatDate(booking.booking_date)} ⬇ {formatDate(booking.return_date)}</p>
+//                     </div>
+//                   </div>
+//                   <div className="mt-auto flex gap-3">
+//                      <button onClick={() => handleCancelBooking(booking.booking_id)} disabled={isCancelling} className="flex-1 border border-red-500/50 text-red-400 py-3 rounded-xl font-bold hover:bg-red-500/10 transition-all text-sm">Cancel</button>
+                     
+//                      {/* 🔴 CHANGE 2: Set the FULL object on click */}
+//                      <button 
+//                        onClick={() => setSelectedBookingForPayment(booking)}
+//                        className="flex-[2] bg-[#F57251] hover:bg-[#d65f41] text-white py-3 rounded-xl font-bold transition-all transform hover:scale-[1.02] shadow-lg flex items-center justify-center gap-2"
+//                      >
+//                        <span>Pay Now</span>
+//                        <span>➜</span>
+//                      </button>
+//                   </div>
+//                 </div>
 //               </div>
-//               <div>
-//                 <label className="text-xs font-bold text-gray-500">End Mileage</label>
-//                 <input 
-//                   type="number" 
-//                   required 
-//                   placeholder="e.g. 52000" 
-//                   className="w-full border p-2 rounded" 
-//                   value={completionData.end_mileage} 
-//                   onChange={e => setCompletionData({...completionData, end_mileage: parseInt(e.target.value)})} 
-//                 />
-//               </div>
-//               <div className="flex gap-3 pt-4">
-//                 <button type="button" onClick={() => setIsCompleteModalOpen(false)} className="flex-1 text-gray-500">Cancel</button>
-//                 <button type="submit" className="flex-1 bg-[#F57251] text-white py-2 rounded font-bold">Confirm Return</button>
-//               </div>
-//             </form>
+//             ))}
 //           </div>
-//         </div>
+//         </section>
 //       )}
 
+//       {/* SECTION 2: ACTIVE TRIPS */}
+//       {activeBookings.length > 0 && (
+//         <section className="mb-12">
+//           <h2 className="text-xl font-bold mb-6 text-[#027480] flex items-center gap-2">
+//             <span className="bg-[#027480]/20 p-1 rounded">🚗</span> Active & Upcoming Trips
+//           </h2>
+//           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+//             {activeBookings.map((booking) => (
+//               <div key={booking.booking_id} className="bg-[#001524] border border-[#027480] rounded-2xl p-6 relative group hover:bg-[#022a35] transition-colors">
+//                 <div className="absolute top-4 right-4 bg-[#027480] text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">{booking.status}</div>
+//                 <h3 className="text-lg font-bold text-white mb-1">{booking.vehicle_manufacturer} {booking.vehicle_model}</h3>
+//                 <p className="text-[#C4AD9D] text-xs uppercase tracking-wide mb-4">Ref: {booking.booking_id}</p>
+//                 <div className="bg-[#000d16] p-4 rounded-xl border border-[#445048] space-y-3">
+//                   <div className="flex justify-between text-sm"><span className="text-[#445048]">Pick-up</span><span className="text-[#E9E6DD] font-medium">{formatDate(booking.booking_date)}</span></div>
+//                   <div className="flex justify-between text-sm"><span className="text-[#445048]">Return</span><span className="text-[#E9E6DD] font-medium">{formatDate(booking.return_date)}</span></div>
+//                   <div className="border-t border-[#445048] pt-2 mt-2 flex justify-between items-center"><span className="text-[#C4AD9D] text-xs">Total Paid</span><span className="font-bold text-[#027480] text-lg">${booking.total_amount}</span></div>
+//                 </div>
+//               </div>
+//             ))}
+//           </div>
+//         </section>
+//       )}
+
+//       {/* SECTION 3: HISTORY */}
+//       {historyBookings.length > 0 && (
+//         <section>
+//           <h2 className="text-xl font-bold mb-6 text-[#445048] flex items-center gap-2"><span className="bg-[#445048]/20 p-1 rounded">📜</span> History</h2>
+//           <div className="bg-[#0f2434] rounded-2xl border border-[#445048] overflow-hidden">
+//             <table className="w-full text-left border-collapse">
+//               <thead><tr className="bg-[#001524] text-[#C4AD9D] text-xs uppercase tracking-wider border-b border-[#445048]"><th className="py-4 px-6">Ref ID</th><th className="py-4 px-6">Vehicle</th><th className="py-4 px-6">Dates</th><th className="py-4 px-6">Total</th><th className="py-4 px-6">Status</th></tr></thead>
+//               <tbody className="text-sm">
+//                 {historyBookings.map((booking) => (
+//                   <tr key={booking.booking_id} className="border-b border-[#445048]/50 hover:bg-[#152e40] transition-colors last:border-0">
+//                     <td className="py-4 px-6 text-[#445048] font-mono">#{booking.booking_id}</td>
+//                     <td className="py-4 px-6 font-medium text-white">{booking.vehicle_manufacturer} {booking.vehicle_model}</td>
+//                     <td className="py-4 px-6 text-[#C4AD9D]">{formatDate(booking.booking_date)} - {formatDate(booking.return_date)}</td>
+//                     <td className="py-4 px-6 font-bold text-[#E9E6DD]">${booking.total_amount}</td>
+//                     <td className="py-4 px-6"><span className={`px-2 py-1 rounded text-xs font-bold ${booking.status === 'Completed' ? 'bg-green-900/30 text-green-400 border border-green-900' : 'bg-red-900/30 text-red-400 border border-red-900'}`}>{booking.status}</span></td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         </section>
+//       )}
+
+//       {/* 🔴 CHANGE 3: Update Modal Props to match the new definition */}
+//       {selectedBookingForPayment && (
+//         <PaymentModal 
+//           isOpen={!!selectedBookingForPayment}
+//           onClose={() => setSelectedBookingForPayment(null)}
+//           bookingData={{
+//             booking_id: selectedBookingForPayment.booking_id,
+//             total_amount: selectedBookingForPayment.total_amount
+//           }}
+//           userData={{
+//             // These fields exist because of the JOIN in your API response
+//             user_id: selectedBookingForPayment.user_id,
+//             email: selectedBookingForPayment.user_email,
+//             first_name: selectedBookingForPayment.user_first_name,
+//             last_name: selectedBookingForPayment.user_last_name,
+//             phone: selectedBookingForPayment.user_contact_phone
+//           }}
+//           vehicleDetails={{
+//             // These fields exist because of the JOIN in your API response
+//             make: selectedBookingForPayment.vehicle_manufacturer,
+//             model: selectedBookingForPayment.vehicle_model,
+//             year: selectedBookingForPayment.vehicle_year
+//           }}
+//         />
+//       )}
 //     </div>
 //   );
 // };
 
-// export default BookingsManagement;
+// export default UserBookingsPage;
+
+
+
+

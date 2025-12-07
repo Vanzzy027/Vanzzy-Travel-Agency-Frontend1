@@ -24,44 +24,6 @@ export interface User {
 
 
 
-export interface MenuItem {
-    menu_item_id: number;
-    name: string;
-    description: string;
-    // backend can return null or omit some fields — keep these optional/nullable
-    category_name?: string | null;
-    price: number;
-    menuitemimage_url?: string | null;
-    is_available?: boolean;
-    quantity?: number;
-    // prep time from backend can be a string or number or undefined
-    prep_time?: string | number;
-    rating?: number;
-}
-
-export interface DashboardStats {
-    totalOrders: number;
-    totalRevenue: number;
-    totalCustomers: number;
-    totalMenuItems: number;
-}
-
-export interface OrderData {
-    order_id: number;
-    customer_id: number;
-    total_amount: number;
-    order_type:'dine_in' | 'takeaway' | 'delivery'
-    status: 'pending' | 'confirmed' | 'preparing' | 'Cancelled'| 'completed';
-    created_at: string;
-}
-
-export interface RecentOrder {
-    id: number;
-    customer: string;
-    amount: number;
-    status: 'Delivered' | 'Preparing' | 'Ready' | 'Cancelled';
-    time: string;
-}
 
 
 
@@ -69,33 +31,57 @@ export interface RecentOrder {
 
 
 
+// In your BookingApi.ts or API types file
+export type InitializePaymentRequest = {
+  booking_id: number;
+  user_id: string;
+  amount: number;
+  payment_method: string;
+  payment_status?: string;
+  transaction_id?: string;
+  transaction_reference?: string;
+  phone?: string;
+};
+
+export type ReceiptResponse = {
+  success: boolean;
+  data: {
+    payment: {
+      payment_id: number;
+      payment_date: string;
+      payment_method: string;
+      transaction_id: string;
+      net_amount: number;
+      commission_fee: number;
+      gross_amount: number;
+    };
+    booking: {
+      booking_id: number;
+      total_amount: number;
+      booking_date: string;
+      return_date: string;
+      vehicle_manufacturer: string;
+      vehicle_model: string;
+      vehicle_year: number;
+      license_plate?: string;
+      vin_number?: string;
+    };
+    user: {
+      first_name: string;
+      last_name: string;
+      email: string;
+      contact_phone: string;
+      address?: string;
+    }
+  };
+};
 
 
 
 
 
-// export interface MenuItem {
-//     menu_item_id: number;
-//     name: string;
-//     description: string;
-//     price: number;
-//     category_name: string | null;
-//     menuitemimage_url: string | null;
-//     is_available: boolean;
-//     quantity: number | undefined; 
-//     rating: number | undefined;
-//     prep_time: string | undefined;
-// }
 
 
-//  //Definition for a cart item, used when adding an item to the Redux cart slice.
 
-// export interface CartItem {
-//     menu_item_id: number;
-//     name: string;
-//     description: string;
-//     category: string; 
-//     unit_price: number;
-//     image_url: string; 
-// }
+
 

@@ -10,10 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@hono/zod-validator": "^0.7.5",
     "@reduxjs/toolkit": "^2.10.1",
     "@tailwindcss/vite": "^4.1.17",
     "daisyui": "^5.5.3",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^3.0.4",
     "lucide-react": "^0.553.0",
+    "paystack": "^2.0.1",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hook-form": "^7.66.0",
@@ -21,6 +29,9 @@
     "react-redux": "^9.2.0",
     "react-router": "^7.9.6",
     "react-router-dom": "^7.9.6",
+    "react-to-pdf": "^2.0.3",
+    "react-to-print": "^3.2.0",
+    "recharts": "^3.5.1",
     "redux": "^5.0.1",
     "redux-persist": "^6.0.0",
     "sonner": "^2.0.7"
