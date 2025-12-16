@@ -51,7 +51,9 @@ const UserPaymentsPage = () => {
     const handleDownloadReceipt = async (paymentId) => {
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:3000/api/payments/${paymentId}/receipt?download=true`, {
+            const API_BASE_URL = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${API_BASE_URL}/api/payments/${paymentId}/receipt?download=true`, {
+                //const response = await fetch(`https://vanske-car-rental.azurewebsites.net/api/payments/${paymentId}/receipt?download=true`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

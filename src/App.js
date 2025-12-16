@@ -16,9 +16,12 @@ import About from './pages/About';
 import UserDashboardHome from './pages/UserPage/MyDashboard';
 import UserVehiclesPage from './pages/UserPage/VehiclesPage';
 import UserBookingsPage from './pages/UserPage/My Bookings';
-import UserReceiptsPage from './pages/UserPage/UserReceipts'; // ADD THIS
+import UserReceiptsPage from './pages/UserPage/UserReceipts';
 import UserPaymentsPage from './pages/UserPage/UserPaymentsPage';
-// Admin Pages
+import ProfilePage from './pages/AdminPage/ProfilePage';
+import SupportPage from './pages/UserPage/SupportPage';
+import MyReviewsPage from './pages/UserPage/MyReviewsPage';
+// Admin Pages - ADD THESE IMPORTS
 import AdminOverview from './pages/AdminPage/AdminDashboard';
 import FleetManagement from './pages/AdminPage/FleetManagement';
 import BookingsManagement from './pages/AdminPage/BookingsManagement';
@@ -26,14 +29,8 @@ import CustomerManagement from './pages/AdminPage/CustomerManagement';
 import Analytics from './pages/AdminPage/Analytics';
 import AdminReceiptsPage from './pages/AdminPage/AdminReceipts';
 import AdminPayments from './pages/AdminPage/AdminPayments';
-// In your admin routes file
-import ProfilePage from './pages/AdminPage/ProfilePage';
-import SupportPage from './pages/UserPage/SupportPage';
 import AdminSupportPage from './pages/AdminPage/AdminSupportPage';
-// Receipt Pages (Standalone)
-import ReceiptPage from './pages/ReceiptPage';
 import AdminReviewsPage from './pages/AdminPage/AdminReviewsPage';
-import MyReviewsPage from './pages/UserPage/MyReviewsPage';
 // --- AUTH GUARD ---
 const ProtectedRoute = ({ children, allowedRoles }) => {
     const { token, user } = useSelector((state) => state.auth) ||
@@ -59,9 +56,6 @@ function App() {
                 { index: true, element: _jsx(Home, {}) },
                 { path: 'login', element: _jsx(Login, {}) },
                 { path: 'register', element: _jsx(Register, {}) },
-                // Public receipt view (shareable links)
-                { path: 'receipt/:paymentId', element: _jsx(ReceiptPage, {}) },
-                { path: 'receipt', element: _jsx(ReceiptPage, {}) },
                 { path: "contact", element: _jsx(ContactPage, {}) },
                 { path: 'about', element: _jsx(About, {}) }
             ],
@@ -74,27 +68,26 @@ function App() {
                 { index: true, element: _jsx(UserDashboardHome, {}) },
                 { path: 'vehicles', element: _jsx(UserVehiclesPage, {}) },
                 { path: 'my-bookings', element: _jsx(UserBookingsPage, {}) },
-                { path: 'my-receipts', element: _jsx(UserReceiptsPage, {}) }, // User's receipts
-                //{ path:"/UserDashboard/profile", element:<UserProfilePage />}
+                { path: 'my-receipts', element: _jsx(UserReceiptsPage, {}) },
                 { path: "profile", element: _jsx(ProfilePage, {}) },
-                { path: '/UserDashboard/my-payments', element: _jsx(UserPaymentsPage, {}) },
+                { path: 'my-payments', element: _jsx(UserPaymentsPage, {}) },
                 { path: "support", element: _jsx(SupportPage, {}) },
                 { path: 'review', element: _jsx(MyReviewsPage, {}) }
             ],
         },
-        // 3. ADMIN DASHBOARD
+        // 3. ADMIN DASHBOARD - FIXED: Added all child routes
         {
             path: '/admin',
             element: (_jsx(ProtectedRoute, { allowedRoles: ['admin'], children: _jsx(AdminDashboardLayout, {}) })),
             children: [
                 { index: true, element: _jsx(AdminOverview, {}) },
+                { path: 'customers', element: _jsx(CustomerManagement, {}) },
                 { path: 'fleet', element: _jsx(FleetManagement, {}) },
                 { path: 'bookings', element: _jsx(BookingsManagement, {}) },
-                { path: 'customers', element: _jsx(CustomerManagement, {}) },
                 { path: 'analytics', element: _jsx(Analytics, {}) },
                 { path: 'payments', element: _jsx(AdminPayments, {}) },
-                { path: 'receipts', element: _jsx(AdminReceiptsPage, {}) }, // Admin receipts
-                { path: '/admin/profile', element: _jsx(ProfilePage, {}) },
+                { path: 'receipts', element: _jsx(AdminReceiptsPage, {}) },
+                { path: 'profile', element: _jsx(ProfilePage, {}) },
                 { path: 'support', element: _jsx(AdminSupportPage, {}) },
                 { path: 'review', element: _jsx(AdminReviewsPage, {}) }
             ],

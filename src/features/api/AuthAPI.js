@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
 export const AuthApi = createApi({
     reducerPath: 'authApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/auth/',
+        baseUrl: `${API_BASE_URL}/api/auth/`,
         prepareHeaders: (headers) => {
             const token = localStorage.getItem('token');
             if (token) {
@@ -50,52 +51,3 @@ export const AuthApi = createApi({
     }),
 });
 export const { useLoginMutation, useRegisterMutation, useForgotPasswordMutation, useVerifyOTPMutation, useResetPasswordMutation } = AuthApi;
-// import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-// interface LoginRequest {
-//   email: string;
-//   password: string;
-// }
-// interface LoginResponse {
-//   token: string;
-//   user: {
-//     user_id: string;
-//     first_name: string;
-//     last_name: string;
-//     email: string;
-//     role: string;
-//     status: string;
-//     verified: boolean;
-//     national_id: string;
-//     contact_phone: string;
-//   };
-// }
-// export const AuthApi = createApi({
-//   reducerPath: 'authApi',
-//   baseQuery: fetchBaseQuery({
-//     baseUrl: 'http://localhost:3000/api/auth/',
-// prepareHeaders: (headers) => {
-//   const token = localStorage.getItem('token');  
-//   if (token) {
-//     headers.set('authorization', `Bearer ${token}`);
-//   }
-//   return headers;
-// },
-//   }),
-//   endpoints: (builder) => ({
-//     login: builder.mutation<LoginResponse, LoginRequest>({
-//       query: (credentials) => ({
-//         url: 'login',
-//         method: 'POST',
-//         body: credentials,
-//       }),
-//     }),
-//     register: builder.mutation({
-//       query: (userData) => ({
-//         url: 'register',
-//         method: 'POST',
-//         body: userData,
-//       }),
-//     }),
-//   }),
-// });
-// export const { useLoginMutation, useRegisterMutation } = AuthApi;

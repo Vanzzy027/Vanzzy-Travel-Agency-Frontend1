@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
 export const UserApi = createApi({
     reducerPath: 'userApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/users', // Check your port
+        baseUrl: `${API_BASE_URL}/api/users`, // Check your port
         prepareHeaders: (headers) => {
             const token = localStorage.getItem('token');
             if (token)
@@ -89,63 +90,3 @@ export const UserApi = createApi({
     }),
 });
 export const { useGetProfileQuery, useUpdateProfileMutation, useGetUserByIdQuery, useGetAllUsersQuery, useUpdateUserMutation, useDeleteUserMutation, useChangeUserRoleMutation, } = UserApi;
-// import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-// import type { User } from '../../types/types'; // Adjust path as needed
-// export const UserApi = createApi({
-//   reducerPath: 'userApi',
-//   baseQuery: fetchBaseQuery({
-//     baseUrl: 'http://localhost:3000/api/users', // Check your port
-//     prepareHeaders: (headers) => {
-//       const token = localStorage.getItem('token');
-//       if (token) headers.set('authorization', `Bearer ${token}`);
-//       return headers;
-//     },
-//   }),
-//   tagTypes: ['User'],
-//   endpoints: (builder) => ({
-//     // READ
-//     getAllUsers: builder.query<User[], void>({
-//       query: () => '/all',
-//       // 🟢 DEBUGGING LAYER: This ensures your component gets an Array
-//       transformResponse: (response: any) => {
-//         console.log("🚀 RAW API RESPONSE:", response); // Check your browser console!
-//         // Scenario 1: Backend returns { data: [...] }
-//         if (response?.data && Array.isArray(response.data)) {
-//             return response.data;
-//         }
-//         // Scenario 2: Backend returns [...]
-//         if (Array.isArray(response)) {
-//             return response;
-//         }
-//         // Scenario 3: Backend returns { users: [...] }
-//         if (response?.users && Array.isArray(response.users)) {
-//             return response.users;
-//         }
-//         return []; // Fallback to empty array to prevent UI crash
-//       },
-//       providesTags: ['User'],
-//     }),
-//     // UPDATE
-//     updateUser: builder.mutation<void, { id: string; updates: Partial<User> }>({
-//       query: ({ id, updates }) => ({
-//         url: `/${id}`,
-//         method: 'PUT',
-//         body: updates,
-//       }),
-//       invalidatesTags: ['User'],
-//     }),
-//     // DELETE
-//     deleteUser: builder.mutation<void, string>({
-//       query: (id) => ({
-//         url: `/${id}`,
-//         method: 'DELETE',
-//       }),
-//       invalidatesTags: ['User'],
-//     }),
-//   }),
-// });
-// export const { 
-//   useGetAllUsersQuery, 
-//   useUpdateUserMutation, 
-//   useDeleteUserMutation 
-// } = UserApi;

@@ -66,7 +66,7 @@ export const paymentApi = createApi({
   reducerPath: 'paymentApi',
   baseQuery: fetchBaseQuery({ 
     // This will result in: https://vanske-car-rental.azurewebsites.net/api/payments
-    baseUrl: `${API_BASE_URL}/payments`, 
+    baseUrl: `${API_BASE_URL}/api/payments`, 
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

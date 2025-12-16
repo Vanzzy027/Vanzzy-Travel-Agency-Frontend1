@@ -1,8 +1,9 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
 export const ticketApi = createApi({
     reducerPath: 'ticketApi',
     baseQuery: fetchBaseQuery({
-        baseUrl: 'https://vanske-car-rental.azurewebsites.net/api', // Update with your actual port
+        baseUrl: `${API_BASE_URL}/api`, // Update with your actual port
         prepareHeaders: (headers) => {
             // In a real app, attach Admin Token here
             const token = localStorage.getItem('token');
@@ -44,5 +45,3 @@ export const ticketApi = createApi({
     }),
 });
 export const { useGetUserTicketsQuery, useCreateTicketMutation, useGetAllTicketsQuery, useUpdateTicketStatusMutation } = ticketApi;
-
-
