@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGetAvailableVehiclesQuery } from '../features/api/VehicleAPI';
 import VehicleCard from '../components/VehicleCard';
-import VehicleDetailsModal from '../components/VehicleDetailsModal';
+import VehicleDetailsModal from '../Modals/VehicleDetailsModal';
 
 const UserVehiclesPage: React.FC = () => {
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);

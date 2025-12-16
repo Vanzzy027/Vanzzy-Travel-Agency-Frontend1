@@ -37,7 +37,7 @@ const AnalyticsDashboard = () => {
   // 1. Fetch Data
   const { data: bookings = [], isLoading: loadingBookings } = useGetAllBookingsQuery();
   const { data: users = [], isLoading: loadingUsers } = useGetAllUsersQuery();
-  const { data: vehicles = [], isLoading: loadingVehicles } = useGetVehiclesQuery({});
+  const { data: vehicles = [], isLoading: loadingVehicles } = useGetVehiclesQuery();
 
   const isLoading = loadingBookings || loadingUsers || loadingVehicles;
 

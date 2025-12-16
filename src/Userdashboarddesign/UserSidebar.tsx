@@ -25,12 +25,13 @@ const UserSidebar: React.FC = () => {
     { icon: Home, label: 'Overview', path: '/UserDashboard' },
     { icon: Car, label: 'Browse Vehicles', path: '/UserDashboard/vehicles' },
     { icon: CalendarDays, label: 'My Bookings', path: '/UserDashboard/my-bookings' },
-    { icon: CreditCard, label: 'Payments', path: '/UserDashboard/payments' },
+    { icon: CreditCard, label: 'Payments', path: '/UserDashboard/my-payments' },
     { icon: Settings, label: 'Settings', path: '/UserDashboard/settings' },
   ];
 
   const bottomItems = [
-    { icon: HelpCircle, label: 'Support', path: '/UserDashboard/emergency' },
+    { icon: HelpCircle, label: 'Support', path: '/UserDashboard/support' },
+    { icon: User, label: 'Review', path: '/UserDashboard/review'},
     { icon: LogOut, label: 'Logout', path: '/logout' }, 
   ];
 

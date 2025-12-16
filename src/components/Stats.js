@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+const Stats = () => {
+    return (_jsx("section", { className: "py-16 bg-[#E9E6DD]", children: _jsx("div", { className: "max-w-7xl mx-auto px-8", children: _jsxs("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-8 text-center", children: [_jsxs("div", { children: [_jsx("div", { className: "text-4xl font-bold text-[#001524] mb-2", children: "50+" }), _jsx("div", { className: "text-[#445048] font-semibold", children: "Premium Vehicles" })] }), _jsxs("div", { children: [_jsx("div", { className: "text-4xl font-bold text-[#027480] mb-2", children: "1000+" }), _jsx("div", { className: "text-[#445048] font-semibold", children: "Happy Customers" })] }), _jsxs("div", { children: [_jsx("div", { className: "text-4xl font-bold text-[#F57251] mb-2", children: "24/7" }), _jsx("div", { className: "text-[#445048] font-semibold", children: "Support" })] }), _jsxs("div", { children: [_jsx("div", { className: "text-4xl font-bold text-[#445048] mb-2", children: "5\u2605" }), _jsx("div", { className: "text-[#445048] font-semibold", children: "Average Rating" })] })] }) }) }));
+};
+export default Stats;

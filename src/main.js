@@ -1,0 +1,10 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { Toaster } from 'sonner';
+import App from './App';
+import { store, persistor } from './store/store';
+import './index.css';
+ReactDOM.createRoot(document.getElementById('root')).render(_jsx(React.StrictMode, { children: _jsx(Provider, { store: store, children: _jsxs(PersistGate, { loading: null, persistor: persistor, children: [_jsx(App, {}), _jsx(Toaster, { richColors: true, position: "top-right", theme: "light", expand: true, duration: 4000 })] }) }) }));

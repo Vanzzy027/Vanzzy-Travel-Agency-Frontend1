@@ -74,7 +74,7 @@ interface UserReceipt {
 export const paymentApi = createApi({
   reducerPath: 'paymentApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'http://localhost:3000/api/payments',
+    baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/payments',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {
@@ -93,7 +93,7 @@ export const paymentApi = createApi({
         }
         return `/receipt${bookingId ? `?bookingId=${bookingId}` : ''}`;
       },
-      providesTags: (result, error, { paymentId }) => 
+      providesTags: (result, _, { paymentId }) => 
         result ? [{ type: 'Receipt', id: paymentId }] : ['Receipt'],
     }),
 
@@ -122,7 +122,7 @@ export const paymentApi = createApi({
     // Get payment by booking ID
     getPaymentByBooking: builder.query({
       query: (bookingId: number) => `/booking/${bookingId}`,
-      providesTags: (result, error, bookingId) => 
+      providesTags: (result, _, bookingId) => 
         result ? [{ type: 'Payment', id: bookingId }] : ['Payment'],
     }),
   }),

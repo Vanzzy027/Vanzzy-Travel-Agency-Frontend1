@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { ShieldCheck, Users, Settings, LogOut } from 'lucide-react';
-import DashboardNavbar from '../components/DashboardNavbar';
+//import DashboardNavbar from '../components/DashboardNavbar';
 
 const SuperAdminDashboardLayout: React.FC = () => {
   return (

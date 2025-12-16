@@ -29,12 +29,12 @@ const Navbar: React.FC = () => {
               Fleet
             </Link>
 
-            <Link to="/rates" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
-              Rates
+            <Link to="/about" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
+              About Us
             </Link>
 
-            <Link to="/locations" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
-              Locations
+            <Link to="/contact" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
+              Contact Us
             </Link>
 
             {/* {/* <Link to="/contact" className="text-[#E9E6DD] hover:text-[#F57251] transition-colors duration-200">
@@ -43,7 +43,7 @@ const Navbar: React.FC = () => {
           </div> */}
 
           {/* Right-side actions */}
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-8">
             {/* Login */ }
              <Link
               to="/login"
@@ -62,14 +62,14 @@ const Navbar: React.FC = () => {
 
             {/* Rent Now */}
             <Link
-              to="/rent"
+              to="/login"
               className="bg-[#027480] text-[#E9E6DD] px-6 py-2 rounded-full hover:bg-[#F57251] transition-colors duration-200"
             >
               Rent Now
-            </Link>
+            </Link >
 
             {/* User Dropdown */}
-            <div className="dropdown dropdown-end">
+            {/* <div className="dropdown dropdown-end">
               <div
                 tabIndex={0}
                 role="button"
@@ -80,7 +80,7 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
 
-              <ul
+              {/* <ul
                 tabIndex={0}
                 className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-[#001524] rounded-box w-52"
               >
@@ -93,8 +93,9 @@ const Navbar: React.FC = () => {
                 <li>
                   <button className="text-[#E9E6DD] hover:text-[#F57251]">Logout</button>
                 </li>
-              </ul>
-            </div>
+              </ul> */}
+            {/* </div> */}
+
           </div>
 
         </div>

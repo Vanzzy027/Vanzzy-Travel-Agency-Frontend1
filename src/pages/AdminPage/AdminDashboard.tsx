@@ -5,7 +5,7 @@ import { useGetVehiclesQuery } from '../../features/api/VehicleAPI';
 
 const AdminDashboardHome: React.FC = () => {
   const { data: bookings, isLoading: bookingsLoading } = useGetAllBookingsQuery();
-  const { data: vehicles, isLoading: vehiclesLoading } = useGetVehiclesQuery({});
+  const { data: vehicles, isLoading: vehiclesLoading } = useGetVehiclesQuery();
 
   const stats = [
     { 

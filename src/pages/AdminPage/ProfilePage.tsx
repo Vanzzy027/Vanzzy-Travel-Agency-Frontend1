@@ -40,7 +40,7 @@ const ProfilePage: React.FC = () => {
 
   const [isEditing, setIsEditing] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [success, setSuccess] = useState<string>("");
+  const [success] = useState<string>("");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -90,7 +90,7 @@ const ProfilePage: React.FC = () => {
       // Get token for authorization
       const token = localStorage.getItem('token');
       
-      const response = await fetch('http://localhost:3000/api/upload/profile-picture', {
+      const response = await fetch('https://vanske-car-rental.azurewebsites.net/api/upload/profile-picture', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

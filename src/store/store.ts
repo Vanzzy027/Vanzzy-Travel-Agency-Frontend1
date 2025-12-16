@@ -9,7 +9,8 @@ import { bookingApi } from '../features/api/BookingApi';
 import { UserApi } from '../features/api/UserApi';
 //import userReducer from '../features/user/userSlice';
 import { paymentApi } from '../features/api/paymentApi';
-
+import { ticketApi } from '../features/api/TicketApi';
+import { reviewApi } from '../features/api/ReviewApi';
 
 const persistConfig = {
   key: 'root',
@@ -28,6 +29,8 @@ export const store = configureStore({
     [bookingApi.reducerPath]: bookingApi.reducer, 
     [UserApi.reducerPath]: UserApi.reducer,
      [paymentApi.reducerPath]: paymentApi.reducer, 
+     [ticketApi.reducerPath]: ticketApi.reducer, 
+     [reviewApi.reducerPath]: reviewApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -39,7 +42,9 @@ export const store = configureStore({
     .concat(vehicleApi.middleware)
     .concat(bookingApi.middleware)
     .concat(UserApi.middleware)
-    .concat(paymentApi.middleware),
+    .concat(paymentApi.middleware)
+    .concat( ticketApi.middleware)
+    .concat(reviewApi.middleware),
 });
 
 export const persistor = persistStore(store);

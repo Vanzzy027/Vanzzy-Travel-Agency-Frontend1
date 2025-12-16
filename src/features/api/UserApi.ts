@@ -4,7 +4,7 @@ import type { User } from '../../types/types'; // Adjust path as needed
 export const UserApi = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/users', // Check your port
+    baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/users', // Check your port
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) headers.set('authorization', `Bearer ${token}`);

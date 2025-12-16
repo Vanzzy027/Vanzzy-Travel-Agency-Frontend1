@@ -1,0 +1,10 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from './src/store/store';
+import App from './src/App';
+import './src/index.css';
+import { Toaster } from 'react-hot-toast';
+ReactDOM.createRoot(document.getElementById('root')).render(_jsx(React.StrictMode, { children: _jsx(Provider, { store: store, children: _jsxs(PersistGate, { loading: _jsx("div", { children: "Loading..." }), persistor: persistor, children: [_jsx(App, {}), _jsx(Toaster, { position: "top-right" })] }) }) }));

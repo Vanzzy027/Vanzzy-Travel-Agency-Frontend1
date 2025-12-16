@@ -24,6 +24,12 @@ type VehicleStatus = 'Available' | 'Rented' | 'Maintenance' | 'Unavailable';
 const FleetManagement: React.FC = () => {
   // Queries
   const { data: vehicles, isLoading, error, refetch: refetchVehicles } = useGetVehiclesQuery(); 
+  
+  
+  // const allSpecs = Array.isArray(specsData) 
+  // ? specsData 
+  // : (specsData as any)?.data || [];
+
   const { data: allSpecs, isLoading: isLoadingSpecs, refetch: refetchSpecs } = useGetVehicleSpecsQuery();
   
   // Mutations

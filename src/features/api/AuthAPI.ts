@@ -54,7 +54,7 @@ interface ResetPasswordResponse {
 export const AuthApi = createApi({
   reducerPath: 'authApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api/auth/',
+    baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/auth/',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');  
       if (token) {

@@ -29,7 +29,7 @@ interface ChatResponse {
 // Memoized selectors to avoid unnecessary re-renders
 const selectUser = (state: RootState) => state.auth.user;
 const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
-const selectAuthToken = (state: RootState) => state.auth.token;
+//const selectAuthToken = (state: RootState) => state.auth.token;
 
 const AIChatBot = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +41,7 @@ const AIChatBot = () => {
   // Get authentication state using memoized selectors
   const user = useSelector(selectUser) as User | null;
   const isAuthenticated = useSelector(selectIsAuthenticated);
-  const authToken = useSelector(selectAuthToken);
+  //const authToken = useSelector(selectAuthToken);
   
   const [sendMessage, { isLoading }] = bookingApi.useSendChatMessageMutation();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -112,7 +112,7 @@ const AIChatBot = () => {
         }));
       
       // If there's no user message in history yet, we need to start with one
-      const hasUserMessages = conversationHistory.some(msg => msg.role === "user");
+     // const hasUserMessages = conversationHistory.some(msg => msg.role === "user");
       
       // Send to Backend
       const response = await sendMessage({
@@ -130,51 +130,6 @@ const AIChatBot = () => {
           text: aiResponse.reply || "I processed your request."
         }] 
       }]);
-
-      // Handle booking success with special formatting
-      // if (aiResponse.actionPerformed === 'create_booking' && aiResponse.functionResult) {
-      //   const bookingResult = typeof aiResponse.functionResult === 'string' 
-      //     ? JSON.parse(aiResponse.functionResult) 
-      //     : aiResponse.functionResult;
-        
-      //   if (bookingResult.status === "success") {
-      //     // Format the booking success message nicely
-      //     const bookingMessage = [
-      //       `✅ **Booking Created Successfully!**`,
-      //       `📋 **Booking ID:** #${bookingResult.booking_id}`,
-      //       `🚗 **Vehicle:** ${bookingResult.vehicle_name || 'Vehicle ID ' + bookingResult.vehicle_id}`,
-      //       `📅 **Dates:** ${bookingResult.dates || 'N/A'}`,
-      //       `⏱️ **Duration:** ${bookingResult.duration}`,
-      //       `💰 **Total Amount:** $${bookingResult.total_amount || bookingResult.amount || 'To be calculated'}`,
-      //       `💳 **Daily Rate:** $${bookingResult.daily_rate || 'N/A'}/day`,
-      //       `\n**Next Steps:**`,
-      //       `1. Proceed to payment to confirm your booking`,
-      //       `2. View your booking: [Dashboard → Bookings](${window.location.origin}/dashboard/bookings)`,
-      //       `3. Contact support if you need assistance`
-      //     ].join('\n');
-
-      //     // Add formatted booking message after a short delay
-      //     setTimeout(() => {
-      //       setMessages(prev => [...prev, {
-      //         role: "model",
-      //         parts: [{
-      //           text: bookingMessage
-      //         }]
-      //       }]);
-      //     }, 800);
-      //   } else if (bookingResult.status === "error") {
-      //     // Show booking error message
-      //     setTimeout(() => {
-      //       setMessages(prev => [...prev, {
-      //         role: "model",
-      //         parts: [{
-      //           text: `❌ **Booking Failed:** ${bookingResult.message || 'Unknown error'}\n\nPlease try again or contact support.`
-      //         }]
-      //       }]);
-      //     }, 800);
-      //   }
-      // }
-      // In AIChatBot.tsx - update the booking success handling
       
 if (aiResponse.actionPerformed === 'create_booking' && aiResponse.functionResult) {
   const bookingResult = typeof aiResponse.functionResult === 'string' 

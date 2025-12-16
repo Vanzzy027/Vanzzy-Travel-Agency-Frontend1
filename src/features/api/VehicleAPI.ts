@@ -85,25 +85,77 @@ export interface CreateVehicleSpecRequest {
   promo_end_date?: string;
 }
 
-export interface VehicleWithSpecs extends Vehicle {
-  manufacturer: string;
-  model: string;
-  year: number;
-  fuel_type: string;
-  engine_capacity: string;
-  transmission: string;
-  seating_capacity: number;
-  color: string;
-  features: string;
-  images: string;
-  on_promo: boolean;
-  review_count: number;
-  vehicle_type: string;
-  fuel_efficiency: string;
-  daily_rate: number;
-  weekly_rate: number;
-  monthly_rate: number;
-  insurance_group: string;
+// export interface VehicleWithSpecs extends Vehicle {
+//   manufacturer: string;
+//   model: string;
+//   year: number;
+//   fuel_type: string;
+//   engine_capacity: string;
+//   transmission: string;
+//   seating_capacity: number;
+//   color: string;
+//   features: string;
+//   images: string;
+//   on_promo: boolean;
+//   review_count: number;
+//   vehicle_type: string;
+//   fuel_efficiency: string;
+//   daily_rate: number;
+//   weekly_rate: number;
+//   monthly_rate: number;
+//   insurance_group: string;
+// }
+// In VehicleGrid.tsx
+export interface VehicleWithSpecs {
+  vehicle_id: number;
+  vehicleSpec_id: number;
+  vin_number: string;
+  license_plate: string;
+  current_mileage: number;
+  rental_rate: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  // Add specification as nested object
+  specification?: {
+    manufacturer: string;
+    model: string;
+    year: number;
+    fuel_type: string;
+    engine_capacity: string;
+    transmission: string;
+    seating_capacity: number;
+    color: string;
+    features: string;
+    images: string;
+    on_promo: boolean;
+    review_count: number;
+    vehicle_type: string;
+    fuel_efficiency: string;
+    daily_rate: number;
+    weekly_rate: number;
+    monthly_rate: number;
+    insurance_group: string;
+  };
+  // OR flatten the properties (recommended):
+  manufacturer?: string;
+  model?: string;
+  year?: number;
+  fuel_type?: string;
+  engine_capacity?: string;
+  transmission?: string;
+  seating_capacity?: number;
+  color?: string;
+  features?: string;
+  images?: string;
+  on_promo?: boolean;
+  review_count?: number;
+  vehicle_type?: string;
+  fuel_efficiency?: string;
+  daily_rate?: number;
+  weekly_rate?: number;
+  monthly_rate?: number;
+  insurance_group?: string;
 }
 
 export interface UpdateVehicleSpecRequest {
@@ -150,13 +202,16 @@ export interface UpdateVehicleRequest {
 export const vehicleApi = createApi({
   reducerPath: 'vehicleApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:3000/api',
+    baseUrl: 'https://vanske-car-rental.azurewebsites.net/api',
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {
-        headers.set('Authorization', `Bearer ${token}`);
+        const cleanToken = token.replace(/"/g, '')
+
+        headers.set('authorization', `Bearer ${cleanToken}`);
+       // headers.set('Authorization', `Bearer ${token}`);
       }
-      headers.set('Content-Type', 'application/json');
+      //headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),

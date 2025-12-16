@@ -1,5 +1,5 @@
 // components/Home.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Hero from '../components/Hero';
 import VehicleGrid from '../components/VehicleGrid';
 import VehicleFilter from '../components/VehicleFilter';
@@ -201,7 +201,7 @@ const mockVehicles = [
 ];
 
 const Home: React.FC = () => {
-  const [vehicles, setVehicles] = useState(mockVehicles);
+  const [vehicles] = useState(mockVehicles);
   const [filteredVehicles, setFilteredVehicles] = useState(mockVehicles);
   const [loading, setLoading] = useState(false);
 
@@ -236,10 +236,10 @@ const Home: React.FC = () => {
 
       // Rating filter
       if (filters.minRating > 0) {
-        filtered = filtered.filter(vehicle => {
-          const rating = parseFloat(((Math.random() * 2) + 3).toFixed(1));
-          return rating >= filters.minRating;
-        });
+        filtered = filtered.filter(v =>
+  v.rental_rate >= filters.priceRange[0] &&
+  v.rental_rate <= filters.priceRange[1]
+);
       }
 
       // Category filter

@@ -3,18 +3,7 @@ import React from 'react';
 import VehicleCard from './VehicleCard';
 import type { VehicleWithSpecs } from '../features/api/VehicleAPI';
 
-// interface Vehicle {
-//   vehicle_id: number;
-//   vehicleSpec_id: number;
-//   vin_number: string;
-//   license_plate: string;
-//   current_mileage: number;
-//   rental_rate: number;
-//   status: string;
-//   created_at: string;
-//   updated_at: string;
-//   specification?: any;
-// }
+
 
 
 interface VehicleGridProps {
