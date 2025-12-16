@@ -7,6 +7,14 @@ import App from './App';
 import { store, persistor } from './store/store';
 import './index.css';
 
+// ADD THIS BLOCK: Disable logs in production environment
+if (import.meta.env.PROD) {
+  console.log = () => {};
+  console.debug = () => {};
+  console.info = () => {};
+  // Keep console.error and console.warn for critical troubleshooting
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Provider store={store}>
@@ -24,35 +32,31 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
-
-
-
-
-
-
-
-
-// import React from 'react'
-// import ReactDOM from 'react-dom/client'
-// import { Provider } from 'react-redux'  
-// import { PersistGate } from 'redux-persist/integration/react'  
-// import { store, persistor } from './store/store'  
-// import App from './App.tsx'
-// import './index.css'
+// import React from 'react';
+// import ReactDOM from 'react-dom/client';
+// import { Provider } from 'react-redux';
+// import { PersistGate } from 'redux-persist/integration/react';
+// import { Toaster } from 'sonner';
+// import App from './App';
+// import { store, persistor } from './store/store';
+// import './index.css';
 
 // ReactDOM.createRoot(document.getElementById('root')!).render(
 //   <React.StrictMode>
-//     <Provider store={store}> 
+//     <Provider store={store}>
 //       <PersistGate loading={null} persistor={persistor}>
 //         <App />
+//         <Toaster 
+//           richColors 
+//           position="top-right"
+//           theme="light"
+//           expand={true}
+//           duration={4000}
+//         />
 //       </PersistGate>
 //     </Provider>
-//   </React.StrictMode>,
-// )
-
-
-
-
+//   </React.StrictMode>
+// );
 
 
 

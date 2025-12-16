@@ -148,11 +148,14 @@ export interface ChatResponse {
 }
 // 2. API DEFINITION
 
+
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
+
 export const bookingApi = createApi({
   reducerPath: 'bookingApi',
   baseQuery: fetchBaseQuery({
     // Base URL for ALL endpoints
-    baseUrl: 'https://vanske-car-rental.azurewebsites.net/api',
+    baseUrl: `${API_BASE_URL}/api`,
     prepareHeaders: (headers, { getState }) => {
       // Get token from Redux state or localStorage
       const token = (getState() as any)?.auth?.token || localStorage.getItem('token');
@@ -164,13 +167,7 @@ export const bookingApi = createApi({
       return headers;
     },
   }),
-  //   prepareHeaders: (headers) => {
-  //     const token = localStorage.getItem('token');
-  //     if (token) headers.set('authorization', `Bearer ${token}`);
-  //     headers.set('Content-Type', 'application/json');
-  //     return headers;
-  //   },
-  // }),
+
   // Add 'Payment' to tagTypes
   tagTypes: ['Booking', 'Payment'],
 
@@ -236,18 +233,6 @@ export const bookingApi = createApi({
       invalidatesTags: [{ type: 'Booking', id: 'LIST' }],
     }),
 
-    // updateBookingStatus: builder.mutation<void, { id: number; status: string }>({
-    //   query: ({  status,id }) => ({
-    //     url: `/bookings/status/${id}`, 
-    //     method: 'PATCH',
-    //     body: { booking_status: status },
-    //   }),
-    //   invalidatesTags: (_result, _error, { id }) => [
-    //     { type: 'Booking', id },
-    //     { type: 'Booking', id: 'LIST' }
-    //   ],
-    // }),
-
 
     updateBooking: builder.mutation<void, { id: number; data: UpdateBookingRequest }>({
       query: ({ id, data }) => ({
@@ -260,34 +245,6 @@ export const bookingApi = createApi({
         { type: 'Booking', id: 'LIST' }
       ],
     }),
-
-    // completeBooking: builder.mutation<void, { id: number; return_date: string; end_mileage: number }>({
-    //   query: ({ id, ...body }) => ({
-    //     url: `/bookings/${id}/complete`,
-    //     method: 'POST',
-    //     body: {
-    //         actual_return_date: body.return_date,
-    //         end_mileage: body.end_mileage
-    //     },
-    //   }),
-    //   invalidatesTags: (_result, _error, { id }) => [
-    //     { type: 'Booking', id },
-    //     { type: 'Booking', id: 'LIST' }
-    //   ],
-    // }),
-
-    // cancelBooking: builder.mutation<void, number>({
-    //   query: (id) => ({ 
-    //     url: `/bookings/${id}/cancel`, 
-    //     method: 'POST' 
-    //   }),
-    //   invalidatesTags: (_result, _error, id) => [
-    //     { type: 'Booking', id },
-    //     { type: 'Booking', id: 'LIST' }
-    //   ],
-    // }),
-
-    // --- PAYMENT ENDPOINTS ---
 
 // ✅ 1. Status Update
     updateBookingStatus: builder.mutation<void, { id: number; status: string }>({

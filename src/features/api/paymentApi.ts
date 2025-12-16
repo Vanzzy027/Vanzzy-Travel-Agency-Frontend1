@@ -59,22 +59,14 @@ interface UserReceipt {
 }
 
 
-// export const bookingApi = createApi({
-//   reducerPath: 'bookingApi',
-//   baseQuery: fetchBaseQuery({
-//     // Base URL for ALL endpoints
-//     baseUrl: 'http://localhost:3000/api',
-//     prepareHeaders: (headers) => {
-//       const token = localStorage.getItem('token');
-//       if (token) headers.set('authorization', `Bearer ${token}`);
-//       headers.set('Content-Type', 'application/json');
-//       return headers;
-//     },
-//   }),
+// Get the base URL from environment variables
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+
 export const paymentApi = createApi({
   reducerPath: 'paymentApi',
   baseQuery: fetchBaseQuery({ 
-    baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/payments',
+    // This will result in: https://vanske-car-rental.azurewebsites.net/api/payments
+    baseUrl: `${API_BASE_URL}/payments`, 
     prepareHeaders: (headers) => {
       const token = localStorage.getItem('token');
       if (token) {

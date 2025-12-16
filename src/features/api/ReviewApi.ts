@@ -1,8 +1,10 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
+
 export const reviewApi = createApi({
   reducerPath: 'reviewApi',
-  baseQuery: fetchBaseQuery({ baseUrl: 'https://vanske-car-rental.azurewebsites.net/api/reviews' }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${API_BASE_URL}/api/reviews`}),
   tagTypes: ['Reviews', 'EligibleBookings'],
   endpoints: (builder) => ({
     getEligibleBookings: builder.query<any[], string>({
