@@ -121,9 +121,11 @@ const DashboardNavbar: React.FC<DashboardNavbarProps> = ({ userType }) => {
           {/* Brand - Restored original styling */}
           <Link to={userType === 'admin' ? '/admin' : '/UserDashboard'} 
                 className="flex items-center space-x-2">
-            <div className="w-10 h-10 rounded-full bg-[#027480] flex items-center justify-center">
-              <span className="text-[#E9E6DD] font-bold text-lg">V</span>
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="Logo" 
+              className="w-10 h-10 rounded-full object-cover" 
+            />   
             <div className="hidden sm:block">
               <h1 className="text-xl sm:text-2xl font-bold text-[#E9E6DD]">VansKE Car Rental</h1>
               <p className="text-[#C4AD9D] text-xs sm:text-sm">Luxury & Performance</p>
