@@ -24,15 +24,17 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between">
           
           {/* Brand with company name and motto */}
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-[#027480] flex items-center justify-center">
-                <img src="/logo.png" alt="Logo" className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-[#E9E6DD]">VansKE Car Rental</h1>
-                <p className="text-[#C4AD9D] text-sm">Luxury & Performance</p>
-              </div>
-            </Link>   
+<Link to="/" className="flex items-center space-x-3">
+  <img 
+    src="/logo.png" 
+    alt="Logo" 
+    className="w-10 h-10 rounded-full object-cover" 
+  />
+  <div>
+    <h1 className="text-xl md:text-2xl font-bold text-[#E9E6DD]">VansKE Car Rental</h1>
+    <p className="text-[#C4AD9D] text-sm">Luxury & Performance</p>
+  </div>
+</Link>     
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
