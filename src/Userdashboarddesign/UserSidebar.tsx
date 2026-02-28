@@ -37,7 +37,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({
     { icon: Car, label: 'Browse Vehicles', path: '/UserDashboard/vehicles' },
     { icon: CalendarDays, label: 'My Bookings', path: '/UserDashboard/my-bookings' },
     { icon: CreditCard, label: 'Payments', path: '/UserDashboard/my-payments' },
-    { icon: Settings, label: 'Settings', path: '/UserDashboard/settings' },
+    //{ icon: Settings, label: 'Settings', path: '/UserDashboard/settings' },
   ];
 
   const bottomItems = [
