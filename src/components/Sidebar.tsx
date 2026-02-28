@@ -10,7 +10,7 @@ const Sidebar: React.FC = () => {
     { icon: '🚗', label: 'Fleet Management' },
     { icon: '📋', label: 'Bookings' },
     { icon: '💰', label: 'Payments' },
-    { icon: '⚙️', label: 'Settings' },
+    //{ icon: '⚙️', label: 'Settings' },
   ];
 
   return (
