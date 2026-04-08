@@ -1,4 +1,3 @@
-// Navbar.tsx
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
@@ -13,7 +12,7 @@ const Navbar: React.FC = () => {
 
   const navLinks = [
     { path: "/", label: "Home" },
-   // { path: "/fleet", label: "Fleet" },
+    // { path: "/fleet", label: "Fleet" },
     { path: "/about", label: "About Us" },
     { path: "/contact", label: "Contact Us" },
   ];
@@ -22,19 +21,20 @@ const Navbar: React.FC = () => {
     <div className="sticky top-0 z-50 p-4 bg-[#E9E6DD] shadow-md">
       <nav className="max-w-7xl mx-auto bg-[#001524] rounded-2xl p-4 shadow-lg">
         <div className="flex items-center justify-between">
-          
           {/* Brand with company name and motto */}
-<Link to="/" className="flex items-center space-x-3">
-  <img 
-    src="/logo.png" 
-    alt="Logo" 
-    className="w-10 h-10 rounded-full object-cover" 
-  />
-  <div>
-    <h1 className="text-xl md:text-2xl font-bold text-[#E9E6DD]">VansKE Car Rental</h1>
-    <p className="text-[#C4AD9D] text-sm">Luxury & Performance</p>
-  </div>
-</Link>     
+          <Link to="/" className="flex items-center space-x-3">
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="w-10 h-10 rounded-full object-cover"
+            />
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-[#E9E6DD]">
+                VansKE Car Rental
+              </h1>
+              <p className="text-[#C4AD9D] text-sm">Luxury & Performance</p>
+            </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
@@ -63,14 +63,14 @@ const Navbar: React.FC = () => {
               >
                 Login
               </Link>
-              
+
               <Link
                 to="/register"
                 className="px-6 py-2 bg-[#F57251] text-[#E9E6DD] rounded-full hover:bg-[#e56546] transition-colors duration-200 font-medium"
               >
                 Sign Up
               </Link>
-              
+
               <Link
                 to="/login" // Redirects to login for booking
                 className="px-6 py-2 bg-[#027480] text-[#E9E6DD] rounded-full hover:bg-[#01616d] transition-colors duration-200 font-medium"
@@ -120,7 +120,7 @@ const Navbar: React.FC = () => {
               >
                 Login
               </Link>
-              
+
               <Link
                 to="/register"
                 onClick={() => setMobileMenuOpen(false)}
@@ -128,7 +128,7 @@ const Navbar: React.FC = () => {
               >
                 Sign Up
               </Link>
-              
+
               <Link
                 to="/login"
                 onClick={() => setMobileMenuOpen(false)}

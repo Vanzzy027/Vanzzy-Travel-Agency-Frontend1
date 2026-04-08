@@ -1,6 +1,6 @@
 import React from "react";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+//import Footer from "../components/Footer";
 import Services from "../components/Services";
 
 import {
@@ -49,8 +49,8 @@ const About: React.FC = () => {
             <p className="text-[#445048] leading-relaxed">
               With a team committed to transparency, safety, and originality, we
               combine technology with world-class service to ensure every client
-              enjoys a seamless, fully personalized rental experience from
-              start to finish.
+              enjoys a seamless, fully personalized rental experience from start
+              to finish.
             </p>
           </div>
 
@@ -109,7 +109,8 @@ const About: React.FC = () => {
                 Excellence
               </h3>
               <p className="text-[#C4AD9D]">
-                From car quality to support — we deliver nothing short of top-tier.
+                From car quality to support — we deliver nothing short of
+                top-tier.
               </p>
             </div>
           </div>
@@ -148,7 +149,8 @@ const About: React.FC = () => {
               Exceptional Service
             </h3>
             <p className="text-[#445048]">
-              A friendly team available 24/7 to support you from booking to return.
+              A friendly team available 24/7 to support you from booking to
+              return.
             </p>
           </div>
 
@@ -158,7 +160,8 @@ const About: React.FC = () => {
               Professional Standards
             </h3>
             <p className="text-[#445048]">
-              Transparent, secure, and reliable service trusted by hundreds of clients.
+              Transparent, secure, and reliable service trusted by hundreds of
+              clients.
             </p>
           </div>
         </div>
@@ -183,7 +186,9 @@ const About: React.FC = () => {
                   “VansKE exceeded my expectations. The car was spotless,
                   powerful, and the service was world-class. Highly recommend.”
                 </p>
-                <h4 className="text-[#E9E6DD] font-semibold">— Satisfied Client</h4>
+                <h4 className="text-[#E9E6DD] font-semibold">
+                  — Satisfied Client
+                </h4>
               </div>
             ))}
           </div>
@@ -194,7 +199,7 @@ const About: React.FC = () => {
       <Services />
 
       {/* FOOTER */}
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

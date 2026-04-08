@@ -1,15 +1,15 @@
-// components/Sidebar.tsx
-import React from 'react';
+
+import React from "react";
 
 const Sidebar: React.FC = () => {
   const menuItems = [
-    { icon: '🏠', label: 'Dashboard', active: true },
-    { icon: '👥', label: 'Customers' },
-    { icon: '📧', label: 'Messages' },
-    { icon: '📊', label: 'Analytics' },
-    { icon: '🚗', label: 'Fleet Management' },
-    { icon: '📋', label: 'Bookings' },
-    { icon: '💰', label: 'Payments' },
+    { icon: "🏠", label: "Dashboard", active: true },
+    { icon: "👥", label: "Customers" },
+    { icon: "📧", label: "Messages" },
+    { icon: "📊", label: "Analytics" },
+    { icon: "🚗", label: "Fleet Management" },
+    { icon: "📋", label: "Bookings" },
+    { icon: "💰", label: "Payments" },
     //{ icon: '⚙️', label: 'Settings' },
   ];
 
@@ -18,8 +18,8 @@ const Sidebar: React.FC = () => {
       {/* Search */}
       <div className="mb-8">
         <div className="relative">
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Search..."
             className="w-full bg-[#027480] text-[#E9E6DD] placeholder-[#E9E6DD] rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#F57251]"
           />
@@ -36,9 +36,9 @@ const Sidebar: React.FC = () => {
             <a
               href="#"
               className={`flex items-center space-x-3 p-3 rounded-lg transition-colors duration-200 ${
-                item.active 
-                  ? 'bg-[#027480] text-[#E9E6DD]' 
-                  : 'text-[#E9E6DD] hover:bg-[#445048]'
+                item.active
+                  ? "bg-[#027480] text-[#E9E6DD]"
+                  : "text-[#E9E6DD] hover:bg-[#445048]"
               }`}
             >
               <span className="text-lg">{item.icon}</span>
@@ -65,4 +65,3 @@ const Sidebar: React.FC = () => {
 };
 
 export default Sidebar;
-

@@ -4,12 +4,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useDispatch } from "react-redux";
 import { setCredentials } from "../features/slice/AuthSlice";
-import { 
+import {
   useLoginMutation,
   useForgotPasswordMutation,
-  useResetPasswordMutation
+  useResetPasswordMutation,
 } from "../features/api/AuthAPI";
-import { Car, Shield, Key, Mail, Lock, Eye, EyeOff, ChevronLeft } from "lucide-react";
+import {
+  Car,
+  Shield,
+  Key,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  ChevronLeft,
+} from "lucide-react";
 
 type LoginFormValues = {
   email: string;
@@ -17,55 +26,59 @@ type LoginFormValues = {
 };
 
 const Login: React.FC = () => {
-  const { 
-    register, 
-    handleSubmit, 
-    formState: { errors, isSubmitting } 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormValues>();
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [forgotPassword, setForgotPassword] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetOTP, setResetOTP] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetOTP, setResetOTP] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   // API hooks
   const [loginUser, { isLoading: isLoginLoading }] = useLoginMutation();
-  const [forgotPasswordApi, { isLoading: isForgotPasswordLoading }] = useForgotPasswordMutation();
-  const [resetPasswordApi, { isLoading: isResetPasswordLoading }] = useResetPasswordMutation();
+  const [forgotPasswordApi, { isLoading: isForgotPasswordLoading }] =
+    useForgotPasswordMutation();
+  const [resetPasswordApi, { isLoading: isResetPasswordLoading }] =
+    useResetPasswordMutation();
 
   const onSubmit: SubmitHandler<LoginFormValues> = async (data) => {
     try {
       const response = await loginUser(data).unwrap();
-      
+
       dispatch(setCredentials({ token: response.token, user: response.user }));
-      
-      localStorage.setItem('user', JSON.stringify(response.user));
-      localStorage.setItem('token', response.token);
+
+      localStorage.setItem("user", JSON.stringify(response.user));
+      localStorage.setItem("token", response.token);
 
       toast.success(`Welcome ${response.user.first_name} back to VansKE! 🚗`);
-      
+
       setTimeout(() => {
         switch (response.user.role) {
-          case 'superAdmin':
-            navigate('/super-admin');
+          case "superAdmin":
+            navigate("/super-admin");
             break;
-          case 'admin':
-            navigate('/admin');
+          case "admin":
+            navigate("/admin");
             break;
-          case 'user':
-            navigate('/UserDashboard');
+          case "user":
+            navigate("/UserDashboard");
             break;
           default:
-            navigate('/');
+            navigate("/");
         }
       }, 800);
     } catch (error: any) {
-      toast.error(error.data?.error || "Login failed. Please check your credentials.");
+      toast.error(
+        error.data?.error || "Login failed. Please check your credentials.",
+      );
     }
   };
 
@@ -77,10 +90,12 @@ const Login: React.FC = () => {
 
     try {
       const response = await forgotPasswordApi({ email: resetEmail }).unwrap();
-      
+
       toast.success("Reset OTP sent to your email. Please check your inbox.");
     } catch (error: any) {
-      toast.error(error.data?.error || "Failed to send OTP. Please check your email.");
+      toast.error(
+        error.data?.error || "Failed to send OTP. Please check your email.",
+      );
     }
   };
 
@@ -101,30 +116,37 @@ const Login: React.FC = () => {
     }
 
     try {
-      const response = await resetPasswordApi({ 
-        email: resetEmail, 
+      const response = await resetPasswordApi({
+        email: resetEmail,
         otp: resetOTP,
-        new_password: newPassword
+        new_password: newPassword,
       }).unwrap();
-      
-      toast.success("Password reset successfully! Please login with your new password.");
+
+      toast.success(
+        "Password reset successfully! Please login with your new password.",
+      );
       setForgotPassword(false);
-      setResetEmail('');
-      setResetOTP('');
-      setNewPassword('');
-      setConfirmPassword('');
+      setResetEmail("");
+      setResetOTP("");
+      setNewPassword("");
+      setConfirmPassword("");
     } catch (error: any) {
-      toast.error(error.data?.error || "Failed to reset password. Please check OTP and try again.");
+      toast.error(
+        error.data?.error ||
+          "Failed to reset password. Please check OTP and try again.",
+      );
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#001524] via-[#001524] to-[#027480] flex items-center justify-center p-4 md:p-8">
       <div className="w-full max-w-4xl bg-[#E9E6DD] rounded-3xl shadow-2xl overflow-hidden">
-        
         {/* Mobile Header - Only shown on small screens */}
         <div className="md:hidden bg-gradient-to-r from-[#001524] to-[#027480] p-6 text-center">
-          <Link to="/" className="inline-flex items-center text-[#E9E6DD] hover:text-[#F57251] mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center text-[#E9E6DD] hover:text-[#F57251] mb-4"
+          >
             <ChevronLeft size={20} className="mr-2" />
             <span>Back to Home</span>
           </Link>
@@ -140,13 +162,12 @@ const Login: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[70vh]">
-          
           {/* Left Side - Brand & Vehicle Showcase (Hidden on mobile) */}
           <div className="hidden lg:flex bg-gradient-to-br from-[#001524] to-[#027480] p-8 lg:p-12 flex-col justify-between text-[#E9E6DD] relative overflow-hidden">
             {/* Decorative Elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#F57251]/10 rounded-full -translate-y-32 translate-x-32"></div>
             <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#D6CC99]/10 rounded-full -translate-x-24 translate-y-24"></div>
-            
+
             {/* Brand */}
             <div className="relative z-10">
               <div className="flex items-center space-x-4 mb-8">
@@ -154,24 +175,34 @@ const Login: React.FC = () => {
                   <span className="text-[#001524] font-bold text-3xl">V</span>
                 </div>
                 <div>
-                  <h1 className="text-3xl lg:text-4xl font-bold">VansKE Car Rental</h1>
-                  <p className="text-[#C4AD9D] text-base lg:text-lg">Luxury & Performance</p>
+                  <h1 className="text-3xl lg:text-4xl font-bold">
+                    VansKE Car Rental
+                  </h1>
+                  <p className="text-[#C4AD9D] text-base lg:text-lg">
+                    Luxury & Performance
+                  </p>
                 </div>
               </div>
-              
+
               {/* Features */}
               <div className="mt-8 space-y-6">
                 <div className="flex items-center space-x-3">
                   <Shield className="w-5 h-5 lg:w-6 lg:h-6 text-[#F57251] flex-shrink-0" />
-                  <h3 className="text-lg lg:text-xl font-semibold">Secure & Trusted Platform</h3>
+                  <h3 className="text-lg lg:text-xl font-semibold">
+                    Secure & Trusted Platform
+                  </h3>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Car className="w-5 h-5 lg:w-6 lg:h-6 text-[#F57251] flex-shrink-0" />
-                  <h3 className="text-lg lg:text-xl font-semibold">Premium Fleet Management</h3>
+                  <h3 className="text-lg lg:text-xl font-semibold">
+                    Premium Fleet Management
+                  </h3>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Key className="w-5 h-5 lg:w-6 lg:h-6 text-[#F57251] flex-shrink-0" />
-                  <h3 className="text-lg lg:text-xl font-semibold">Instant Booking Access</h3>
+                  <h3 className="text-lg lg:text-xl font-semibold">
+                    Instant Booking Access
+                  </h3>
                 </div>
               </div>
             </div>
@@ -179,7 +210,8 @@ const Login: React.FC = () => {
             {/* Testimonial */}
             <div className="relative z-10 mt-auto pt-8 border-t border-[#445048]">
               <p className="italic text-[#C4AD9D] text-sm lg:text-base">
-                "Experience luxury on wheels with VansKE - where every journey is exceptional."
+                "Experience luxury on wheels with VansKE - where every journey
+                is exceptional."
               </p>
             </div>
           </div>
@@ -190,14 +222,24 @@ const Login: React.FC = () => {
               <>
                 {/* Login Form Header */}
                 <div className="mb-6 md:mb-8">
-                  <h2 className="text-2xl md:text-3xl font-bold text-[#001524] mb-2">Welcome Back</h2>
-                  <p className="text-[#445048] text-sm md:text-base">Sign in to access your VansKE account</p>
+                  <h2 className="text-2xl md:text-3xl font-bold text-[#001524] mb-2">
+                    Welcome Back
+                  </h2>
+                  <p className="text-[#445048] text-sm md:text-base">
+                    Sign in to access your VansKE account
+                  </p>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+                <form
+                  onSubmit={handleSubmit(onSubmit)}
+                  className="space-y-4 md:space-y-6"
+                >
                   {/* Email */}
                   <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-[#001524] mb-2">
+                    <label
+                      htmlFor="email"
+                      className="block text-sm font-medium text-[#001524] mb-2"
+                    >
                       Email Address
                     </label>
                     <div className="relative">
@@ -217,14 +259,19 @@ const Login: React.FC = () => {
                       />
                     </div>
                     {errors.email && (
-                      <p className="mt-1 text-sm text-[#F57251]">{errors.email.message}</p>
+                      <p className="mt-1 text-sm text-[#F57251]">
+                        {errors.email.message}
+                      </p>
                     )}
                   </div>
 
                   {/* Password */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label htmlFor="password" className="block text-sm font-medium text-[#001524]">
+                      <label
+                        htmlFor="password"
+                        className="block text-sm font-medium text-[#001524]"
+                      >
                         Password
                       </label>
                       <button
@@ -255,11 +302,17 @@ const Login: React.FC = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 md:right-4 top-3 md:top-3.5 text-[#445048] hover:text-[#027480]"
                       >
-                        {showPassword ? <EyeOff size={18} className="md:w-5 md:h-5" /> : <Eye size={18} className="md:w-5 md:h-5" />}
+                        {showPassword ? (
+                          <EyeOff size={18} className="md:w-5 md:h-5" />
+                        ) : (
+                          <Eye size={18} className="md:w-5 md:h-5" />
+                        )}
                       </button>
                     </div>
                     {errors.password && (
-                      <p className="mt-1 text-sm text-[#F57251]">{errors.password.message}</p>
+                      <p className="mt-1 text-sm text-[#F57251]">
+                        {errors.password.message}
+                      </p>
                     )}
                   </div>
 
@@ -271,7 +324,10 @@ const Login: React.FC = () => {
                       type="checkbox"
                       className="w-4 h-4 text-[#027480] bg-white border-[#445048]/30 rounded focus:ring-[#027480] focus:ring-1 md:focus:ring-2"
                     />
-                    <label htmlFor="remember" className="text-xs md:text-sm text-[#445048]">
+                    <label
+                      htmlFor="remember"
+                      className="text-xs md:text-sm text-[#445048]"
+                    >
                       Remember me for 30 days
                     </label>
                   </div>
@@ -288,7 +344,7 @@ const Login: React.FC = () => {
                         <span>Signing In...</span>
                       </div>
                     ) : (
-                      'Sign In'
+                      "Sign In"
                     )}
                   </button>
 
@@ -298,7 +354,9 @@ const Login: React.FC = () => {
                       <div className="w-full border-t border-[#445048]/20"></div>
                     </div>
                     <div className="relative flex justify-center text-sm">
-                      <span className="px-4 bg-[#E9E6DD] text-[#445048] text-xs md:text-sm">Or continue with</span>
+                      <span className="px-4 bg-[#E9E6DD] text-[#445048] text-xs md:text-sm">
+                        Or continue with
+                      </span>
                     </div>
                   </div>
 
@@ -323,9 +381,9 @@ const Login: React.FC = () => {
                   {/* Sign Up Link */}
                   <div className="text-center pt-4">
                     <p className="text-[#445048] text-sm md:text-base">
-                      Don't have an account?{' '}
-                      <Link 
-                        to="/register" 
+                      Don't have an account?{" "}
+                      <Link
+                        to="/register"
                         className="text-[#027480] hover:text-[#F57251] font-semibold transition-colors duration-200"
                       >
                         Create one here
@@ -341,25 +399,33 @@ const Login: React.FC = () => {
                   <button
                     onClick={() => {
                       setForgotPassword(false);
-                      setResetEmail('');
-                      setResetOTP('');
-                      setNewPassword('');
-                      setConfirmPassword('');
+                      setResetEmail("");
+                      setResetOTP("");
+                      setNewPassword("");
+                      setConfirmPassword("");
                     }}
                     className="flex items-center text-[#027480] hover:text-[#F57251] mb-4 md:mb-6 transition-colors text-sm md:text-base"
                   >
                     <ChevronLeft size={18} className="mr-2" />
                     Back to login
                   </button>
-                  <h2 className="text-2xl md:text-3xl font-bold text-[#001524] mb-2">Reset Your Password</h2>
-                  <p className="text-[#445048] text-sm md:text-base">Enter your email to receive a reset OTP, then set a new password</p>
+                  <h2 className="text-2xl md:text-3xl font-bold text-[#001524] mb-2">
+                    Reset Your Password
+                  </h2>
+                  <p className="text-[#445048] text-sm md:text-base">
+                    Enter your email to receive a reset OTP, then set a new
+                    password
+                  </p>
                 </div>
 
                 {/* Single Form for Reset */}
                 <div className="space-y-4 md:space-y-6">
                   {/* Email Input */}
                   <div>
-                    <label htmlFor="resetEmail" className="block text-sm font-medium text-[#001524] mb-2">
+                    <label
+                      htmlFor="resetEmail"
+                      className="block text-sm font-medium text-[#001524] mb-2"
+                    >
                       Email Address
                     </label>
                     <div className="relative">
@@ -377,14 +443,21 @@ const Login: React.FC = () => {
 
                   {/* OTP Input */}
                   <div>
-                    <label htmlFor="resetOTP" className="block text-sm font-medium text-[#001524] mb-2">
+                    <label
+                      htmlFor="resetOTP"
+                      className="block text-sm font-medium text-[#001524] mb-2"
+                    >
                       OTP (Sent to your email)
                     </label>
                     <input
                       id="resetOTP"
                       type="text"
                       value={resetOTP}
-                      onChange={(e) => setResetOTP(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      onChange={(e) =>
+                        setResetOTP(
+                          e.target.value.replace(/\D/g, "").slice(0, 6),
+                        )
+                      }
                       className="w-full px-4 py-3 bg-white border border-[#445048]/30 rounded-lg md:rounded-xl text-[#001524] text-center text-lg md:text-xl tracking-widest focus:outline-none focus:border-[#027480] focus:ring-2 focus:ring-[#027480]/20 transition-all duration-200"
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
@@ -393,7 +466,10 @@ const Login: React.FC = () => {
 
                   {/* New Password */}
                   <div>
-                    <label htmlFor="newPassword" className="block text-sm font-medium text-[#001524] mb-2">
+                    <label
+                      htmlFor="newPassword"
+                      className="block text-sm font-medium text-[#001524] mb-2"
+                    >
                       New Password
                     </label>
                     <div className="relative">
@@ -411,14 +487,21 @@ const Login: React.FC = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 md:right-4 top-3 md:top-3.5 text-[#445048] hover:text-[#027480]"
                       >
-                        {showPassword ? <EyeOff size={18} className="md:w-5 md:h-5" /> : <Eye size={18} className="md:w-5 md:h-5" />}
+                        {showPassword ? (
+                          <EyeOff size={18} className="md:w-5 md:h-5" />
+                        ) : (
+                          <Eye size={18} className="md:w-5 md:h-5" />
+                        )}
                       </button>
                     </div>
                   </div>
 
                   {/* Confirm Password */}
                   <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-[#001524] mb-2">
+                    <label
+                      htmlFor="confirmPassword"
+                      className="block text-sm font-medium text-[#001524] mb-2"
+                    >
                       Confirm Password
                     </label>
                     <div className="relative">
@@ -447,13 +530,19 @@ const Login: React.FC = () => {
                           <span>Sending OTP...</span>
                         </div>
                       ) : (
-                        'Send Reset OTP'
+                        "Send Reset OTP"
                       )}
                     </button>
 
                     <button
                       onClick={handleResetPassword}
-                      disabled={!resetOTP || !newPassword || !confirmPassword || newPassword !== confirmPassword || isResetPasswordLoading}
+                      disabled={
+                        !resetOTP ||
+                        !newPassword ||
+                        !confirmPassword ||
+                        newPassword !== confirmPassword ||
+                        isResetPasswordLoading
+                      }
                       className="w-full bg-gradient-to-r from-[#F57251] to-[#027480] text-[#E9E6DD] py-3 px-6 rounded-lg md:rounded-xl font-semibold text-sm md:text-base hover:from-[#e56546] hover:to-[#026270] transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                     >
                       {isResetPasswordLoading ? (
@@ -462,7 +551,7 @@ const Login: React.FC = () => {
                           <span>Resetting Password...</span>
                         </div>
                       ) : (
-                        'Reset Password'
+                        "Reset Password"
                       )}
                     </button>
                   </div>
@@ -472,11 +561,17 @@ const Login: React.FC = () => {
                     <div className="flex items-start space-x-3">
                       <Shield className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="text-sm text-blue-800 font-medium">Reset Instructions</p>
+                        <p className="text-sm text-blue-800 font-medium">
+                          Reset Instructions
+                        </p>
                         <ol className="text-xs text-blue-600 mt-1 list-decimal pl-4 space-y-1">
                           <li>Enter your email address</li>
-                          <li>Click "Send Reset OTP" to receive a 6-digit code</li>
-                          <li>Check your email for the OTP and enter it above</li>
+                          <li>
+                            Click "Send Reset OTP" to receive a 6-digit code
+                          </li>
+                          <li>
+                            Check your email for the OTP and enter it above
+                          </li>
                           <li>Set your new password and confirm it</li>
                           <li>Click "Reset Password" to complete</li>
                         </ol>

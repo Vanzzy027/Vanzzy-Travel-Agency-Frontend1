@@ -1,9 +1,15 @@
-// pages/ContactPage.tsx
 import React, { useState } from "react";
 import Navbar from "../components/Navbar";
 import { Mail, Phone, MapPin } from "lucide-react";
+import emailjs from "@emailjs/browser";
+import { toast } from "sonner";
+
+/* RATE LIMIT */
+const RATE_LIMIT_TIME = 60 * 1000;
 
 const ContactPage: React.FC = () => {
+  const [loading, setLoading] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -12,27 +18,112 @@ const ContactPage: React.FC = () => {
   });
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
+  /* ✅ VALIDATION (proper, not lazy) */
+  const validate = () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    alert("Thank you! Your message has been sent.");
-    setFormData({ name: "", email: "", subject: "", message: "" });
+    if (!formData.name.trim()) return "Full name is required";
+    if (!emailRegex.test(formData.email))
+      return "Please enter a valid email address";
+    if (!formData.subject.trim()) return "Subject is required";
+    if (formData.message.trim().length < 10)
+      return "Message must be at least 10 characters";
+
+    return null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    /* VALIDATION FIRST */
+    const validationError = validate();
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    /* RATE LIMIT */
+    const lastSent = localStorage.getItem("lastEmailTime");
+    const now = Date.now();
+
+    if (lastSent && now - Number(lastSent) < RATE_LIMIT_TIME) {
+      toast.warning("Please wait a bit before sending another message.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      console.log("📤 Sending form:", formData);
+
+      /* ADMIN EMAIL */
+      const adminRes = await emailjs.send(
+        "service_8dzzzxw",
+        "template_zsw0ms1",
+        {
+          from_name: formData.name,
+          from_email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+        },
+        "bai7FJSKXRsPsOpJ3",
+      );
+
+      /* AUTO REPLY */
+      const clientRes = await emailjs.send(
+        "service_8dzzzxw",
+        "template_zic101d",
+        {
+          to_name: formData.name,
+          to_email: formData.email,
+          subject: formData.subject,
+        },
+        "bai7FJSKXRsPsOpJ3",
+      );
+
+      console.log("✅ Admin:", adminRes.status, "Client:", clientRes.status);
+
+      /* SUCCESS */
+      toast.success("Your message has been sent successfully.");
+
+      /* ✅ CLEAR FORM PROPERLY */
+      setFormData({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+      });
+
+      localStorage.setItem("lastEmailTime", now.toString());
+    } catch (error: any) {
+      console.error("❌ EmailJS Error:", error);
+
+      toast.error("Failed to send message. Please try again.");
+
+      /* DEBUGGING HELP */
+      if (error?.text) {
+        console.error("EmailJS details:", error.text);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="bg-[#001524] min-h-screen text-[#E9E6DD]">
       <Navbar />
 
-      {/* HEADER SECTION */}
       <section className="max-w-7xl mx-auto px-6 lg:px-12 py-20">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* LEFT: TEXT */}
+          {/* LEFT SIDE (UNCHANGED) */}
           <div>
             <h1 className="text-5xl font-bold leading-tight mb-6">
               Contact <span className="text-[#F57251]">VansKE</span>
@@ -44,7 +135,6 @@ const ContactPage: React.FC = () => {
               we'll get back to you as soon as possible.
             </p>
 
-            {/* MINI CONTACT INFO CARD */}
             <div className="bg-[#445048]/50 backdrop-blur p-6 rounded-2xl border border-[#445048] space-y-5 w-full lg:w-3/4">
               <div className="flex items-start space-x-4">
                 <Phone className="text-[#027480]" />
@@ -59,8 +149,12 @@ const ContactPage: React.FC = () => {
                 <Mail className="text-[#027480]" />
                 <div>
                   <p className="font-semibold">Email</p>
-                  <p className="text-[#C4AD9D] text-sm">info@vanske.com</p>
-                  <p className="text-[#C4AD9D] text-sm">bookings@vanske.com</p>
+                  <p className="text-[#C4AD9D] text-sm">
+                    vanzzyspinet@gmail.com
+                  </p>
+                  <p className="text-[#C4AD9D] text-sm">
+                    mathengevan@gmail.com
+                  </p>
                 </div>
               </div>
 
@@ -74,7 +168,7 @@ const ContactPage: React.FC = () => {
             </div>
           </div>
 
-          {/* RIGHT: CONTACT FORM */}
+          {/* FORM */}
           <div>
             <form
               onSubmit={handleSubmit}
@@ -90,9 +184,7 @@ const ContactPage: React.FC = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    required
-                    className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] placeholder-[#C4AD9D] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-                    placeholder="Enter your name"
+                    className="w-full p-3 rounded-xl bg-[#445048]"
                   />
                 </div>
 
@@ -105,9 +197,7 @@ const ContactPage: React.FC = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    required
-                    className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] placeholder-[#C4AD9D] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-                    placeholder="you@example.com"
+                    className="w-full p-3 rounded-xl bg-[#445048]"
                   />
                 </div>
               </div>
@@ -121,9 +211,7 @@ const ContactPage: React.FC = () => {
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
-                  required
-                  className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] placeholder-[#C4AD9D] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-                  placeholder="Message subject"
+                  className="w-full p-3 rounded-xl bg-[#445048]"
                 />
               </div>
 
@@ -133,20 +221,19 @@ const ContactPage: React.FC = () => {
                 </label>
                 <textarea
                   name="message"
+                  rows={5}
                   value={formData.message}
                   onChange={handleChange}
-                  required
-                  rows={5}
-                  className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] placeholder-[#C4AD9D] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-                  placeholder="Write your message here..."
-                ></textarea>
+                  className="w-full p-3 rounded-xl bg-[#445048]"
+                />
               </div>
 
               <button
                 type="submit"
-                className="w-full mt-8 py-4 rounded-xl bg-[#027480] text-[#E9E6DD] font-semibold hover:bg-[#F57251] transition-all duration-300"
+                disabled={loading}
+                className="w-full mt-8 py-4 rounded-xl bg-[#027480] hover:bg-[#F57251]"
               >
-                Send Message
+                {loading ? "Sending..." : "Send Message"}
               </button>
             </form>
           </div>
@@ -157,112 +244,3 @@ const ContactPage: React.FC = () => {
 };
 
 export default ContactPage;
-
-
-// // pages/ContactPage.tsx
-// import React, { useState } from "react";
-
-// const ContactPage: React.FC = () => {
-//   const [formData, setFormData] = useState({
-//     name: "",
-//     email: "",
-//     subject: "",
-//     message: "",
-//   });
-
-//   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-//     setFormData({ ...formData, [e.target.name]: e.target.value });
-//   };
-
-//   const handleSubmit = (e: React.FormEvent) => {
-//     e.preventDefault();
-//     console.log("Form submitted:", formData);
-
-//     // Later we will replace this with an API call → Nodemailer backend
-//     alert("Thank you! Your message has been sent.");
-//     setFormData({ name: "", email: "", subject: "", message: "" });
-//   };
-
-//   return (
-//     <section className="min-h-screen bg-[#E9E6DD] py-20">
-//       <div className="max-w-4xl mx-auto px-6">
-        
-//         <h2 className="text-4xl font-bold text-center text-[#001524] mb-6">
-//           Contact Us
-//         </h2>
-//         <p className="text-center text-[#445048] text-lg mb-12 max-w-2xl mx-auto">
-//           Have a question, need assistance, or want to make a special request?
-//           We're here to help — just drop us a message.
-//         </p>
-
-//         <form
-//           onSubmit={handleSubmit}
-//           className="bg-[#001524] p-10 rounded-2xl shadow-lg"
-//         >
-//           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-//             <div>
-//               <label className="block text-[#E9E6DD] mb-2 font-semibold">Full Name</label>
-//               <input
-//                 type="text"
-//                 name="name"
-//                 value={formData.name}
-//                 onChange={handleChange}
-//                 required
-//                 className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-//                 placeholder="Enter your name"
-//               />
-//             </div>
-
-//             <div>
-//               <label className="block text-[#E9E6DD] mb-2 font-semibold">Email Address</label>
-//               <input
-//                 type="email"
-//                 name="email"
-//                 value={formData.email}
-//                 onChange={handleChange}
-//                 required
-//                 className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-//                 placeholder="you@example.com"
-//               />
-//             </div>
-//           </div>
-
-//           <div className="mt-6">
-//             <label className="block text-[#E9E6DD] mb-2 font-semibold">Subject</label>
-//             <input
-//               type="text"
-//               name="subject"
-//               value={formData.subject}
-//               onChange={handleChange}
-//               required
-//               className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-//               placeholder="Message subject"
-//             />
-//           </div>
-
-//           <div className="mt-6">
-//             <label className="block text-[#E9E6DD] mb-2 font-semibold">Your Message</label>
-//             <textarea
-//               name="message"
-//               value={formData.message}
-//               onChange={handleChange}
-//               required
-//               rows={5}
-//               className="w-full p-3 rounded-xl bg-[#445048] text-[#E9E6DD] focus:outline-none focus:ring-2 focus:ring-[#027480]"
-//               placeholder="Write your message here..."
-//             ></textarea>
-//           </div>
-
-//           <button
-//             type="submit"
-//             className="w-full mt-8 py-4 rounded-xl bg-[#027480] text-[#E9E6DD] font-semibold hover:bg-[#F57251] transition-all duration-300"
-//           >
-//             Send Message
-//           </button>
-//         </form>
-//       </div>
-//     </section>
-//   );
-// };
-
-// export default ContactPage;
