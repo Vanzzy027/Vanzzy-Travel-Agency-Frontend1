@@ -1,25 +1,36 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { useState, useMemo } from 'react';
-import { useGetAvailableVehiclesQuery } from '../features/api/VehicleAPI';
-import VehicleCard from '../components/VehicleCard';
-import VehicleDetailsModal from '../Modals/VehicleDetailsModal';
+import { useState, useMemo } from "react";
+import { useGetAvailableVehiclesQuery } from "../features/api/VehicleAPI";
+import VehicleCard from "../components/VehicleCard";
+import VehicleDetailsModal from "../Modals/VehicleDetailsModal";
 const UserVehiclesPage = () => {
     const [selectedVehicleId, setSelectedVehicleId] = useState(null);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState('All');
+    const [searchTerm, setSearchTerm] = useState("");
+    const [typeFilter, setTypeFilter] = useState("All");
     // This is now guaranteed to be an array (or undefined while loading)
-    const { data: vehicles = [], isLoading, error } = useGetAvailableVehiclesQuery();
+    const { data: vehicles = [], isLoading, error, } = useGetAvailableVehiclesQuery();
     console.log("REAL API DATA:", vehicles);
     // Client-side filtering with useMemo for performance
     const filteredVehicles = useMemo(() => {
         return vehicles.filter((vehicle) => {
-            const matchesSearch = vehicle.manufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                vehicle.model.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesType = typeFilter === 'All' || vehicle.vehicle_type === typeFilter;
+            // 1. Safely handle manufacturer and model (fallback to empty string if undefined)
+            const manufacturer = (vehicle.manufacturer ?? "").toLowerCase();
+            const model = (vehicle.model ?? "").toLowerCase();
+            const search = searchTerm.toLowerCase();
+            const matchesSearch = manufacturer.includes(search) || model.includes(search);
+            // 2. Ensure typeFilter matches or is 'All'
+            const matchesType = typeFilter === "All" || vehicle.vehicle_type === typeFilter;
             return matchesSearch && matchesType;
         });
     }, [vehicles, searchTerm, typeFilter]);
-    const vehicleTypes = ['All', 'Sports Car', 'SUV', 'Sedan', 'Coupe', 'Convertible'];
+    const vehicleTypes = [
+        "All",
+        "Sports Car",
+        "SUV",
+        "Sedan",
+        "Coupe",
+        "Convertible",
+    ];
     const handleViewDetails = (vehicleId) => setSelectedVehicleId(vehicleId);
     const handleCloseModal = () => setSelectedVehicleId(null);
     // Loading state

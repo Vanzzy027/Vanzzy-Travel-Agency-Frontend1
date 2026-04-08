@@ -44,7 +44,9 @@ const AIChatBot = () => {
         ]);
         setInput("");
         try {
-            const userId = user?.user_id || user?.id;
+            const userId = user?.user_id ?? user?.id;
+            if (userId === undefined)
+                return;
             const history = messages.map((msg) => ({
                 role: msg.role,
                 parts: [{ text: msg.parts[0].text }],
