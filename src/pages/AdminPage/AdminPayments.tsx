@@ -6,11 +6,9 @@ import { useGetAllReceiptsQuery } from "../../features/api/paymentApi";
 import {
   CreditCard,
   DollarSign,
-  Filter,
   Search,
   Download,
   Eye,
-  Calendar,
   TrendingUp,
   Shield,
 } from "lucide-react";

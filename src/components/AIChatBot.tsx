@@ -18,7 +18,6 @@ import {
   Lock,
   Loader2,
   Sparkles,
-  ChevronDown,
 } from "lucide-react";
 import { bookingApi } from "../features/api/BookingApi";
 import type { RootState } from "../store/store";
