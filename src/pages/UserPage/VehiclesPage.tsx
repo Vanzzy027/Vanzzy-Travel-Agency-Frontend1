@@ -1,173 +1,162 @@
-import React, { useState } from "react";
+// pages/UserVehiclesPage.tsx
+import React, { useState, useMemo } from "react";
 import { useGetAvailableVehiclesQuery } from "../../features/api/VehicleAPI";
-import VehicleCard from "../../components/VehicleCard";
+import VehicleGrid from "../../components/VehicleGrid";
+import VehicleFilter from "../../components/VehicleFilter";
 import VehicleDetailsModal from "../../Modals/VehicleDetailsModal";
+import { Search, Car } from "lucide-react";
 
 const UserVehiclesPage: React.FC = () => {
+  const { data: vehicles, isLoading, error } = useGetAvailableVehiclesQuery();
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(
     null,
   );
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All");
+  const [filters, setFilters] = useState({
+    search: "",
+    brands: [] as string[],
+    categories: [] as string[],
+    priceRange: [0, 1000] as [number, number],
+    minRating: 0,
+    transmission: [] as string[],
+    fuelType: [] as string[],
+  });
 
-  const { data: vehicles, isLoading, error } = useGetAvailableVehiclesQuery();
-
-const filteredVehicles = vehicles?.filter(vehicle => {
-  const manufacturer = vehicle.specification?.manufacturer || "";
-  const model = vehicle.specification?.model || "";
-  const vehicleType = vehicle.specification?.vehicle_type || "";
-
-  const matchesSearch =
-    manufacturer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    model.toLowerCase().includes(searchTerm.toLowerCase());
-
-  const matchesType =
-    typeFilter === 'All' || vehicleType === typeFilter;
-
-  return matchesSearch && matchesType;
-});
-
-  const handleViewDetails = (vehicleId: number) => {
+  const handleViewDetails = (vehicleId: number) =>
     setSelectedVehicleId(vehicleId);
-  };
+  const handleCloseModal = () => setSelectedVehicleId(null);
+  const handleFilterChange = (updatedFilters: typeof filters) =>
+    setFilters(updatedFilters);
 
-  const handleCloseModal = () => {
-    setSelectedVehicleId(null);
-  };
+  // Filter vehicles based on search & filters
+  const filteredVehicles = useMemo(() => {
+    if (!vehicles) return [];
 
-  const vehicleTypes = [
-    "All",
-    "Sports Car",
-    "SUV",
-    "Sedan",
-    "Coupe",
-    "Convertible",
-  ];
+    return vehicles.filter((vehicle) => {
+      const searchMatch =
+        (vehicle.manufacturer ?? "")
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        (vehicle.model ?? "")
+          .toLowerCase()
+          .includes(filters.search.toLowerCase());
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      const brandMatch =
+        filters.brands.length === 0 ||
+        filters.brands.includes(vehicle.manufacturer ?? "");
+
+      const categoryMatch =
+        filters.categories.length === 0 ||
+        filters.categories.includes(vehicle.vehicle_type ?? "");
+
+      const priceMatch =
+        vehicle.rental_rate >= filters.priceRange[0] &&
+        vehicle.rental_rate <= filters.priceRange[1];
+
+      const transmissionMatch =
+        filters.transmission.length === 0 ||
+        filters.transmission.includes(vehicle.transmission ?? "");
+
+      const fuelMatch =
+        filters.fuelType.length === 0 ||
+        filters.fuelType.includes(vehicle.fuel_type ?? "");
+
+      const ratingMatch =
+        !(vehicle as any).avg_rating ||
+        (vehicle as any).avg_rating >= filters.minRating;
+
+      return (
+        searchMatch &&
+        brandMatch &&
+        categoryMatch &&
+        priceMatch &&
+        transmissionMatch &&
+        fuelMatch &&
+        ratingMatch
+      );
+    });
+  }, [vehicles, filters]);
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 h-screen overflow-hidden">
+      {/* Filter sidebar */}
+      <div className="lg:w-1/4 h-full">
+        <div className="h-full overflow-y-auto pr-2">
+          <VehicleFilter onFilterChange={handleFilterChange} />
+        </div>
+      </div>
+
+      {/* Vehicle List / Grid */}
+      <div className="lg:w-3/4 space-y-6 overflow-y-auto h-full pr-2">
+        {/* Header */}
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#001524] mb-2">
+            <h1 className="text-3xl font-bold text-[#001524]">
               Available Vehicles
             </h1>
             <p className="text-[#445048]">Browse our luxury fleet</p>
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div
-              key={index}
-              className="bg-[#001524] rounded-2xl p-6 animate-pulse"
-            >
-              <div className="h-48 bg-[#445048] rounded-lg mb-4"></div>
-              <div className="h-4 bg-[#445048] rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-[#445048] rounded w-1/2 mb-4"></div>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="h-3 bg-[#445048] rounded"></div>
-                ))}
-              </div>
-              <div className="h-10 bg-[#445048] rounded-lg"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🚗</div>
-        <h3 className="text-2xl font-bold text-[#001524] mb-2">
-          Error Loading Vehicles
-        </h3>
-        <p className="text-[#445048]">Please try again later.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[#001524] mb-2">
-            Available Vehicles
-          </h1>
-          <p className="text-[#445048]">Browse our luxury fleet</p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-          {/* Search */}
-          <div className="relative">
+          {/* Search Input */}
+          <div className="relative w-full sm:w-64">
             <input
               type="text"
               placeholder="Search vehicles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 px-4 py-2 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]"
+              value={filters.search}
+              onChange={(e) =>
+                setFilters({ ...filters, search: e.target.value })
+              }
+              className="w-full px-4 py-2 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]"
             />
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#C4AD9D]">
-              🔍
-            </div>
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C4AD9D] w-4 h-4" />
           </div>
-
-          {/* Type Filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]"
-          >
-            {vehicleTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
         </div>
-      </div>
 
-      {/* Results Count */}
-      <div className="text-[#445048]">
-        Showing {filteredVehicles?.length || 0} of {vehicles?.length || 0}{" "}
-        vehicles
-      </div>
-
-      {/* Vehicle Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVehicles?.map((vehicle) => (
-          <VehicleCard
-            key={vehicle.vehicle_id}
-            vehicle={vehicle}
-            onViewDetails={handleViewDetails}
-          />
-        ))}
-      </div>
-
-      {(!filteredVehicles || filteredVehicles.length === 0) && (
-        <div className="text-center py-12 bg-[#001524] rounded-2xl">
-          <div className="text-6xl mb-4">🚗</div>
-          <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
-            No vehicles found
-          </h3>
-          <p className="text-[#C4AD9D]">
-            Try adjusting your search or filters.
-          </p>
+        {/* Results Count */}
+        <div className="text-[#445048]">
+          Showing {filteredVehicles.length} of {vehicles?.length || 0} vehicles
         </div>
-      )}
 
-      {/* Vehicle Details Modal */}
-      {selectedVehicleId && (
-        <VehicleDetailsModal
-          vehicleId={selectedVehicleId}
-          onClose={handleCloseModal}
+        {/* Vehicle Grid */}
+        <VehicleGrid
+          vehicles={filteredVehicles}
+          loading={isLoading}
+          onViewDetails={handleViewDetails}
+          onRentVehicle={handleViewDetails} // reuse same modal
         />
-      )}
+
+        {/* Vehicle Details Modal */}
+        {selectedVehicleId && (
+          <VehicleDetailsModal
+            vehicleId={selectedVehicleId}
+            onClose={handleCloseModal}
+          />
+        )}
+
+        {/* Error / Empty States */}
+        {error && !isLoading && (
+          <div className="text-center py-12 bg-[#001524] rounded-2xl">
+            <div className="text-6xl mb-4">🚗</div>
+            <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
+              Error Loading Vehicles
+            </h3>
+            <p className="text-[#C4AD9D]">Please try again later.</p>
+          </div>
+        )}
+
+        {!isLoading && filteredVehicles.length === 0 && (
+          <div className="text-center py-12 bg-[#001524] rounded-2xl">
+            <Car className="mx-auto text-[#C4AD9D] w-16 h-16 mb-4" />
+            <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
+              No vehicles found
+            </h3>
+            <p className="text-[#C4AD9D]">Try adjusting your filters.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
 export default UserVehiclesPage;
+
+// the filter is sticky, but currently it scrolls with the page because it’s inside a container that also scrolls. What you want is a fixed-height sidebar that scrolls independently of the vehicle grid so the filters stay in view while you scroll the vehicles, like a true desktop sidebar.

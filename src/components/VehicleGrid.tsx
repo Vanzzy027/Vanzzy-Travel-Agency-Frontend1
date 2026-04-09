@@ -1,21 +1,29 @@
 // components/VehicleGrid.tsx
-import React from 'react';
-import VehicleCard from './VehicleCard';
-import type { VehicleWithSpecs } from '../features/api/VehicleAPI';
-
-
-
+import React from "react";
+import VehicleCard from "./VehicleCard";
+import type { VehicleWithSpecs } from "../features/api/VehicleAPI";
 
 interface VehicleGridProps {
   vehicles: VehicleWithSpecs[];
   loading?: boolean;
+  onViewDetails?: (vehicleId: number) => void;
+  onRentVehicle?: (vehicleId: number) => void;
 }
-const VehicleGrid: React.FC<VehicleGridProps> = ({ vehicles, loading = false }) => {
+
+const VehicleGrid: React.FC<VehicleGridProps> = ({
+  vehicles,
+  loading = false,
+  onViewDetails,
+  onRentVehicle,
+}) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, index) => (
-          <div key={index} className="bg-[#001524] rounded-2xl p-6 animate-pulse">
+          <div
+            key={index}
+            className="bg-[#001524] rounded-2xl p-6 animate-pulse"
+          >
             <div className="h-48 bg-[#445048] rounded-lg mb-4"></div>
             <div className="h-4 bg-[#445048] rounded w-3/4 mb-2"></div>
             <div className="h-3 bg-[#445048] rounded w-1/2 mb-4"></div>
@@ -27,16 +35,6 @@ const VehicleGrid: React.FC<VehicleGridProps> = ({ vehicles, loading = false }) 
             <div className="h-10 bg-[#445048] rounded-lg"></div>
           </div>
         ))}
-      </div>
-    );
-  }
-
-  if (vehicles.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <div className="text-6xl mb-4">🚗</div>
-        <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">No vehicles found</h3>
-        <p className="text-[#C4AD9D]">Try adjusting your filters to find more options.</p>
       </div>
     );
   }
@@ -59,8 +57,13 @@ const VehicleGrid: React.FC<VehicleGridProps> = ({ vehicles, loading = false }) 
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {vehicles.map(vehicle => (
-          <VehicleCard key={vehicle.vehicle_id} vehicle={vehicle} />
+        {vehicles.map((vehicle) => (
+          <VehicleCard
+            key={vehicle.vehicle_id}
+            vehicle={vehicle}
+            onViewDetails={onViewDetails}
+            onRentVehicle={onRentVehicle}
+          />
         ))}
       </div>
     </div>

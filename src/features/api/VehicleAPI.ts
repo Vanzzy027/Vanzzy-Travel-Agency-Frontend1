@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Vehicle Interfaces
 export interface VehicleSpec {
@@ -35,7 +35,7 @@ export interface Vehicle {
   license_plate: string;
   current_mileage: number;
   rental_rate: number;
-  status: 'Available' | 'Rented' | 'Maintenance' | 'Unavailable';
+  status: "Available" | "Rented" | "Maintenance" | "Unavailable";
   created_at: string;
   updated_at: string;
   // Joined fields from VehicleSpec
@@ -85,27 +85,6 @@ export interface CreateVehicleSpecRequest {
   promo_end_date?: string;
 }
 
-// export interface VehicleWithSpecs extends Vehicle {
-//   manufacturer: string;
-//   model: string;
-//   year: number;
-//   fuel_type: string;
-//   engine_capacity: string;
-//   transmission: string;
-//   seating_capacity: number;
-//   color: string;
-//   features: string;
-//   images: string;
-//   on_promo: boolean;
-//   review_count: number;
-//   vehicle_type: string;
-//   fuel_efficiency: string;
-//   daily_rate: number;
-//   weekly_rate: number;
-//   monthly_rate: number;
-//   insurance_group: string;
-// }
-// In VehicleGrid.tsx
 export interface VehicleWithSpecs {
   vehicle_id: number;
   vehicleSpec_id: number;
@@ -124,11 +103,15 @@ export interface VehicleWithSpecs {
     fuel_type: string;
     engine_capacity: string;
     transmission: string;
+    avg_rating?: number;
     seating_capacity: number;
     color: string;
     features: string;
     images: string;
     on_promo: boolean;
+    promo_rate: number;
+    promo_start_date: string;
+    promo_end_date: string;
     review_count: number;
     vehicle_type: string;
     fuel_efficiency: string;
@@ -149,6 +132,9 @@ export interface VehicleWithSpecs {
   features?: string;
   images?: string;
   on_promo?: boolean;
+  promo_rate?: number;
+  promo_start_date?: string;
+  promo_end_date?: string;
   review_count?: number;
   vehicle_type?: string;
   fuel_efficiency?: string;
@@ -187,7 +173,7 @@ export interface CreateVehicleRequest {
   license_plate: string;
   current_mileage: number;
   rental_rate: number;
-  status: 'Available' | 'Rented' | 'Maintenance' | 'Unavailable';
+  status: "Available" | "Rented" | "Maintenance" | "Unavailable";
 }
 
 export interface UpdateVehicleRequest {
@@ -195,70 +181,76 @@ export interface UpdateVehicleRequest {
   license_plate?: string;
   current_mileage?: number;
   rental_rate?: number;
-  status?: 'Available' | 'Rented' | 'Maintenance' | 'Unavailable';
+  status?: "Available" | "Rented" | "Maintenance" | "Unavailable";
 }
 //Constant API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // API Definition
 export const vehicleApi = createApi({
-  reducerPath: 'vehicleApi',
+  reducerPath: "vehicleApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api`,
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem("token");
       if (token) {
-        const cleanToken = token.replace(/"/g, '')
+        const cleanToken = token.replace(/"/g, "");
 
-        headers.set('authorization', `Bearer ${cleanToken}`);
-       // headers.set('Authorization', `Bearer ${token}`);
+        headers.set("authorization", `Bearer ${cleanToken}`);
+        // headers.set('Authorization', `Bearer ${token}`);
       }
       //headers.set('Content-Type', 'application/json');
       return headers;
     },
   }),
-  tagTypes: ['Vehicle', 'VehicleSpec'],
+  tagTypes: ["Vehicle", "VehicleSpec"],
   endpoints: (builder) => ({
     // --- VEHICLE SPECS ENDPOINTS ---
-    
+
     // Get all vehicle specifications
     getVehicleSpecs: builder.query<VehicleSpec[], void>({
-      query: () => '/vehicle-specs',
+      query: () => "/vehicle-specs",
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ vehicleSpec_id }) => ({ type: 'VehicleSpec' as const, id: vehicleSpec_id })),
-              { type: 'VehicleSpec', id: 'LIST' }
+              ...result.map(({ vehicleSpec_id }) => ({
+                type: "VehicleSpec" as const,
+                id: vehicleSpec_id,
+              })),
+              { type: "VehicleSpec", id: "LIST" },
             ]
-          : [{ type: 'VehicleSpec', id: 'LIST' }],
+          : [{ type: "VehicleSpec", id: "LIST" }],
     }),
 
     // Get vehicle spec by ID
     getVehicleSpecById: builder.query<VehicleSpec, number>({
       query: (id) => `/vehicle-specs/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'VehicleSpec', id }],
+      providesTags: (_result, _error, id) => [{ type: "VehicleSpec", id }],
     }),
 
     // Create vehicle specification
     createVehicleSpec: builder.mutation<VehicleSpec, CreateVehicleSpecRequest>({
       query: (body) => ({
-        url: '/vehicle-specs',
-        method: 'POST',
+        url: "/vehicle-specs",
+        method: "POST",
         body,
       }),
-      invalidatesTags: [{ type: 'VehicleSpec', id: 'LIST' }],
+      invalidatesTags: [{ type: "VehicleSpec", id: "LIST" }],
     }),
 
     // Update vehicle specification
-    updateVehicleSpec: builder.mutation<VehicleSpec, { id: number; data: UpdateVehicleSpecRequest }>({
+    updateVehicleSpec: builder.mutation<
+      VehicleSpec,
+      { id: number; data: UpdateVehicleSpecRequest }
+    >({
       query: ({ id, data }) => ({
         url: `/vehicle-specs/${id}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
       }),
       invalidatesTags: (_result, _error, { id }) => [
-        { type: 'VehicleSpec', id },
-        { type: 'VehicleSpec', id: 'LIST' }
+        { type: "VehicleSpec", id },
+        { type: "VehicleSpec", id: "LIST" },
       ],
     }),
 
@@ -266,46 +258,49 @@ export const vehicleApi = createApi({
     deleteVehicleSpec: builder.mutation<void, number>({
       query: (id) => ({
         url: `/vehicle-specs/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
       invalidatesTags: (_result, _error, id) => [
-        { type: 'VehicleSpec', id },
-        { type: 'VehicleSpec', id: 'LIST' },
-        { type: 'Vehicle', id: 'LIST' } // Invalidate vehicles too since they might be affected
+        { type: "VehicleSpec", id },
+        { type: "VehicleSpec", id: "LIST" },
+        { type: "Vehicle", id: "LIST" }, // Invalidate vehicles too since they might be affected
       ],
     }),
 
     // --- VEHICLE ENDPOINTS ---
 
-
     //     // GET: Available Vehicles Only
 
     getAvailableVehicles: builder.query<VehicleWithSpecs[], void>({
-      query: () => '/vehicles/available',
+      query: () => "/vehicles/available",
       transformResponse: (response: any) => {
         // Preserving your robust response parsing
         if (Array.isArray(response)) return response;
-        if (response?.data && Array.isArray(response.data)) return response.data;
-        if (response?.vehicles && Array.isArray(response.vehicles)) return response.vehicles;
+        if (response?.data && Array.isArray(response.data))
+          return response.data;
+        if (response?.vehicles && Array.isArray(response.vehicles))
+          return response.vehicles;
         return []; // fallback
-
-
       },
       providesTags: (result) => {
-        const tags: ({ type: 'Vehicle'; id: number | 'AVAILABLE' })[] = (result ?? []).map(
-          ({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })
-        );
-        tags.push({ type: 'Vehicle' as const, id: 'AVAILABLE' });
+        const tags: { type: "Vehicle"; id: number | "AVAILABLE" }[] = (
+          result ?? []
+        ).map(({ vehicle_id }) => ({
+          type: "Vehicle" as const,
+          id: vehicle_id,
+        }));
+        tags.push({ type: "Vehicle" as const, id: "AVAILABLE" });
         return tags;
       },
     }),
 
-
     // Get all vehicles with specs
     getVehicles: builder.query<Vehicle[], void>({
-      query: () => '/vehicles',
+      query: () => "/vehicles",
       transformResponse: (response: any) => {
-        const rawData = Array.isArray(response) ? response : (response?.data || []);
+        const rawData = Array.isArray(response)
+          ? response
+          : response?.data || [];
         return rawData.map((vehicle: any) => ({
           vehicle_id: vehicle.vehicle_id,
           vehicleSpec_id: vehicle.vehicleSpec_id,
@@ -342,38 +337,44 @@ export const vehicleApi = createApi({
       providesTags: (result) =>
         result
           ? [
-              ...result.map(({ vehicle_id }) => ({ type: 'Vehicle' as const, id: vehicle_id })),
-              { type: 'Vehicle', id: 'LIST' }
+              ...result.map(({ vehicle_id }) => ({
+                type: "Vehicle" as const,
+                id: vehicle_id,
+              })),
+              { type: "Vehicle", id: "LIST" },
             ]
-          : [{ type: 'Vehicle', id: 'LIST' }],
+          : [{ type: "Vehicle", id: "LIST" }],
     }),
 
     // Get vehicle by ID
     getVehicleById: builder.query<Vehicle, number>({
       query: (id) => `/vehicles/${id}`,
-      providesTags: (_result, _error, id) => [{ type: 'Vehicle', id }],
+      providesTags: (_result, _error, id) => [{ type: "Vehicle", id }],
     }),
 
     // Create vehicle
     addVehicle: builder.mutation<Vehicle, CreateVehicleRequest>({
       query: (body) => ({
-        url: '/vehicles',
-        method: 'POST',
+        url: "/vehicles",
+        method: "POST",
         body,
       }),
-      invalidatesTags: [{ type: 'Vehicle', id: 'LIST' }],
+      invalidatesTags: [{ type: "Vehicle", id: "LIST" }],
     }),
 
     // Update vehicle
-    updateVehicle: builder.mutation<Vehicle, { id: number; data: UpdateVehicleRequest }>({
+    updateVehicle: builder.mutation<
+      Vehicle,
+      { id: number; data: UpdateVehicleRequest }
+    >({
       query: ({ id, data }) => ({
         url: `/vehicles/${id}`,
-        method: 'PUT',
+        method: "PUT",
         body: data,
       }),
       invalidatesTags: (_result, _error, { id }) => [
-        { type: 'Vehicle', id },
-        { type: 'Vehicle', id: 'LIST' }
+        { type: "Vehicle", id },
+        { type: "Vehicle", id: "LIST" },
       ],
     }),
 
@@ -381,24 +382,27 @@ export const vehicleApi = createApi({
     deleteVehicle: builder.mutation<void, number>({
       query: (id) => ({
         url: `/vehicles/${id}`,
-        method: 'DELETE',
+        method: "DELETE",
       }),
       invalidatesTags: (_result, _error, id) => [
-        { type: 'Vehicle', id },
-        { type: 'Vehicle', id: 'LIST' }
+        { type: "Vehicle", id },
+        { type: "Vehicle", id: "LIST" },
       ],
     }),
 
     // Update vehicle status only
-    updateVehicleStatus: builder.mutation<Vehicle, { id: number; status: string }>({
+    updateVehicleStatus: builder.mutation<
+      Vehicle,
+      { id: number; status: string }
+    >({
       query: ({ id, status }) => ({
         url: `/vehicles/${id}/status`,
-        method: 'PATCH',
+        method: "PATCH",
         body: { status },
       }),
       invalidatesTags: (_result, _error, { id }) => [
-        { type: 'Vehicle', id },
-        { type: 'Vehicle', id: 'LIST' }
+        { type: "Vehicle", id },
+        { type: "Vehicle", id: "LIST" },
       ],
     }),
   }),
@@ -412,8 +416,7 @@ export const {
   useCreateVehicleSpecMutation,
   useUpdateVehicleSpecMutation,
   useDeleteVehicleSpecMutation,
-  
-  
+
   // Vehicles
   useGetVehiclesQuery,
   useGetVehicleByIdQuery,
@@ -422,6 +425,4 @@ export const {
   useDeleteVehicleMutation,
   useUpdateVehicleStatusMutation,
   useGetAvailableVehiclesQuery,
-
 } = vehicleApi;
-

@@ -1,10 +1,11 @@
 // components/Home.tsx
-import React, { useState } from 'react';
-import Hero from '../components/Hero';
-import VehicleGrid from '../components/VehicleGrid';
-import VehicleFilter from '../components/VehicleFilter';
+import React, { useState } from "react";
+import Hero from "./Hero";
+import VehicleGrid from "./VehicleGrid";
+import VehicleFilter from "./VehicleFilter";
 
 // Mock data based on your schema
+// ...existing code...
 const mockVehicles = [
   {
     vehicle_id: 1,
@@ -26,8 +27,17 @@ const mockVehicles = [
       transmission: "Automatic",
       seating_capacity: 2,
       color: "Rosso Corsa",
-      features: JSON.stringify(["Apple CarPlay", "Carbon Ceramic Brakes", "Launch Control", "Race Mode", "Premium Sound System", "Leather Interior"]),
-      images: JSON.stringify(["https://images.unsplash.com/photo-1563720223485-41b76d31f5c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"]),
+      features: JSON.stringify([
+        "Apple CarPlay",
+        "Carbon Ceramic Brakes",
+        "Launch Control",
+        "Race Mode",
+        "Premium Sound System",
+        "Leather Interior",
+      ]),
+      images: JSON.stringify([
+        "https://images.unsplash.com/photo-1563720223485-41b76d31f5c3?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      ]),
       on_promo: true,
       review_count: 47,
       vehicle_type: "Sports Car",
@@ -35,8 +45,11 @@ const mockVehicles = [
       daily_rate: 999,
       weekly_rate: 5999,
       monthly_rate: 21999,
-      insurance_group: "High"
-    }
+      insurance_group: "High",
+      promo_rate: 20,
+      promo_start_date: "2024-01-01",
+      promo_end_date: "2024-12-31",
+    },
   },
   {
     vehicle_id: 2,
@@ -58,8 +71,17 @@ const mockVehicles = [
       transmission: "Automatic",
       seating_capacity: 2,
       color: "Arancio Borealis",
-      features: JSON.stringify(["Lamborghini Dinamica Veicolo", "Magnetic Suspension", "Carbon Fiber Package", "Sport Exhaust", "Lifting System", "Race Mode"]),
-      images: JSON.stringify(["https://images.unsplash.com/photo-1544636331-e26879cd4d9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"]),
+      features: JSON.stringify([
+        "Lamborghini Dinamica Veicolo",
+        "Magnetic Suspension",
+        "Carbon Fiber Package",
+        "Sport Exhaust",
+        "Lifting System",
+        "Race Mode",
+      ]),
+      images: JSON.stringify([
+        "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      ]),
       on_promo: false,
       review_count: 89,
       vehicle_type: "Sports Car",
@@ -67,8 +89,11 @@ const mockVehicles = [
       daily_rate: 1299,
       weekly_rate: 7799,
       monthly_rate: 27999,
-      insurance_group: "Very High"
-    }
+      insurance_group: "Very High",
+      promo_rate: 0,
+      promo_start_date: "",
+      promo_end_date: "",
+    },
   },
   {
     vehicle_id: 3,
@@ -90,8 +115,16 @@ const mockVehicles = [
       transmission: "Automatic",
       seating_capacity: 4,
       color: "GT Silver Metallic",
-      features: JSON.stringify(["Porsche Communication Management", "Sport Chrono Package", "Adaptive Suspension", "Rear-Axle Steering", "Night Vision Assist"]),
-      images: JSON.stringify(["https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"]),
+      features: JSON.stringify([
+        "Porsche Communication Management",
+        "Sport Chrono Package",
+        "Adaptive Suspension",
+        "Rear-Axle Steering",
+        "Night Vision Assist",
+      ]),
+      images: JSON.stringify([
+        "https://images.unsplash.com/photo-1503376780353-7e6692767b70?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      ]),
       on_promo: true,
       review_count: 156,
       vehicle_type: "Sports Car",
@@ -99,8 +132,11 @@ const mockVehicles = [
       daily_rate: 799,
       weekly_rate: 4499,
       monthly_rate: 16999,
-      insurance_group: "High"
-    }
+      insurance_group: "High",
+      promo_rate: 16,
+      promo_start_date: "2024-01-01",
+      promo_end_date: "2024-12-31",
+    },
   },
   {
     vehicle_id: 4,
@@ -122,8 +158,16 @@ const mockVehicles = [
       transmission: "Automatic",
       seating_capacity: 2,
       color: "Sarthe Grey",
-      features: JSON.stringify(["Variable Drift Control", "Race Mode", "Carbon Ceramic Brakes", "Bowers & Wilkins Audio", "Telemetry System"]),
-      images: JSON.stringify(["https://images.unsplash.com/photo-1626019857f10b22ff2d868b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"]),
+      features: JSON.stringify([
+        "Variable Drift Control",
+        "Race Mode",
+        "Carbon Ceramic Brakes",
+        "Bowers & Wilkins Audio",
+        "Telemetry System",
+      ]),
+      images: JSON.stringify([
+        "https://images.unsplash.com/photo-1626019857f10b22ff2d868b?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      ]),
       on_promo: false,
       review_count: 34,
       vehicle_type: "Sports Car",
@@ -131,8 +175,11 @@ const mockVehicles = [
       daily_rate: 1599,
       weekly_rate: 9599,
       monthly_rate: 34999,
-      insurance_group: "Very High"
-    }
+      insurance_group: "Very High",
+      promo_rate: 0,
+      promo_start_date: "",
+      promo_end_date: "",
+    },
   },
   {
     vehicle_id: 5,
@@ -154,8 +201,16 @@ const mockVehicles = [
       transmission: "Automatic",
       seating_capacity: 2,
       color: "Quantum Silver",
-      features: JSON.stringify(["Bang & Olufsen Sound", "Sports Plus Seats", "Carbon Fiber Exterior", "360 Camera", "Parking Assist"]),
-      images: JSON.stringify(["https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"]),
+      features: JSON.stringify([
+        "Bang & Olufsen Sound",
+        "Sports Plus Seats",
+        "Carbon Fiber Exterior",
+        "360 Camera",
+        "Parking Assist",
+      ]),
+      images: JSON.stringify([
+        "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      ]),
       on_promo: true,
       review_count: 78,
       vehicle_type: "Sports Car",
@@ -163,8 +218,11 @@ const mockVehicles = [
       daily_rate: 899,
       weekly_rate: 4999,
       monthly_rate: 18999,
-      insurance_group: "High"
-    }
+      insurance_group: "High",
+      promo_rate: 10,
+      promo_start_date: "2024-01-01",
+      promo_end_date: "2024-12-31",
+    },
   },
   {
     vehicle_id: 6,
@@ -186,8 +244,16 @@ const mockVehicles = [
       transmission: "Automatic",
       seating_capacity: 2,
       color: "Selenite Grey",
-      features: JSON.stringify(["AMG Performance Exhaust", "AMG Ride Control", "Burmester Sound", "Head-up Display", "Driver Assistance Package"]),
-      images: JSON.stringify(["https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80"]),
+      features: JSON.stringify([
+        "AMG Performance Exhaust",
+        "AMG Ride Control",
+        "Burmester Sound",
+        "Head-up Display",
+        "Driver Assistance Package",
+      ]),
+      images: JSON.stringify([
+        "https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&auto=format&fit=crop&w=600&q=80",
+      ]),
       on_promo: false,
       review_count: 112,
       vehicle_type: "Sports Car",
@@ -195,71 +261,76 @@ const mockVehicles = [
       daily_rate: 599,
       weekly_rate: 3499,
       monthly_rate: 12999,
-      insurance_group: "Medium"
-    }
-  }
+      insurance_group: "Medium",
+      promo_rate: 0,
+      promo_start_date: "",
+      promo_end_date: "",
+    },
+  },
 ];
 
-const Home: React.FC = () => {
+const Homecomp: React.FC = () => {
   const [vehicles] = useState(mockVehicles);
   const [filteredVehicles, setFilteredVehicles] = useState(mockVehicles);
   const [loading, setLoading] = useState(false);
 
   const handleFilterChange = (filters: any) => {
     setLoading(true);
-    
+
     // Simulate API call delay
     setTimeout(() => {
       let filtered = [...vehicles];
 
       // Search filter
       if (filters.search) {
-        filtered = filtered.filter(vehicle =>
+        filtered = filtered.filter((vehicle) =>
           `${vehicle.specification.manufacturer} ${vehicle.specification.model}`
             .toLowerCase()
-            .includes(filters.search.toLowerCase())
+            .includes(filters.search.toLowerCase()),
         );
       }
 
       // Brand filter
       if (filters.brands.length > 0) {
-        filtered = filtered.filter(vehicle =>
-          filters.brands.includes(vehicle.specification.manufacturer)
+        filtered = filtered.filter((vehicle) =>
+          filters.brands.includes(vehicle.specification.manufacturer),
         );
       }
 
       // Price range filter
-      filtered = filtered.filter(vehicle =>
-        vehicle.rental_rate >= filters.priceRange[0] &&
-        vehicle.rental_rate <= filters.priceRange[1]
+      filtered = filtered.filter(
+        (vehicle) =>
+          vehicle.rental_rate >= filters.priceRange[0] &&
+          vehicle.rental_rate <= filters.priceRange[1],
       );
 
       // Rating filter
       if (filters.minRating > 0) {
-        filtered = filtered.filter(v =>
-  v.rental_rate >= filters.priceRange[0] &&
-  v.rental_rate <= filters.priceRange[1]
-);
+        filtered = filtered.filter(
+          (v) =>
+            v.rental_rate >= filters.priceRange[0] &&
+            v.rental_rate <= filters.priceRange[1],
+        );
       }
 
       // Category filter
       if (filters.categories.length > 0) {
-        filtered = filtered.filter(vehicle =>
-          filters.categories.includes(vehicle.specification.vehicle_type)
+        filtered = filtered.filter((vehicle) =>
+          filters.categories.includes(vehicle.specification.vehicle_type),
         );
       }
 
       // Transmission filter
       if (filters.transmission.length > 0) {
-        filtered = filtered.filter(vehicle =>
-          filters.transmission.includes(vehicle.specification.transmission)
+        filtered = filtered.filter((vehicle) =>
+          filters.transmission.includes(vehicle.specification.transmission),
         );
       }
 
       // Fuel type filter
       if (filters.fuelType.length > 0) {
-        filtered = filtered.filter(vehicle =>
-          filters.fuelType.includes(vehicle.specification.fuel_type)
+        filtered = filtered.filter((vehicle) =>
+          filters.fuelType.includes(vehicle.specification.fuel_type),
         );
       }
 
@@ -289,8 +360,9 @@ const Home: React.FC = () => {
               Luxury Supercar Fleet
             </h1>
             <p className="text-[#445048] text-lg">
-              Experience the thrill of driving the world's most exclusive supercars. 
-              Each vehicle is meticulously maintained and comes with comprehensive insurance.
+              Experience the thrill of driving the world's most exclusive
+              supercars. Each vehicle is meticulously maintained and comes with
+              comprehensive insurance.
             </p>
           </div>
 
@@ -323,4 +395,4 @@ const Home: React.FC = () => {
   );
 };
 
-export default Home;
+export default Homecomp;

@@ -1,77 +1,80 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 //Constant API URL
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 // API Definition
 export const vehicleApi = createApi({
-    reducerPath: 'vehicleApi',
+    reducerPath: "vehicleApi",
     baseQuery: fetchBaseQuery({
         baseUrl: `${API_BASE_URL}/api`,
         prepareHeaders: (headers) => {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem("token");
             if (token) {
-                const cleanToken = token.replace(/"/g, '');
-                headers.set('authorization', `Bearer ${cleanToken}`);
+                const cleanToken = token.replace(/"/g, "");
+                headers.set("authorization", `Bearer ${cleanToken}`);
                 // headers.set('Authorization', `Bearer ${token}`);
             }
             //headers.set('Content-Type', 'application/json');
             return headers;
         },
     }),
-    tagTypes: ['Vehicle', 'VehicleSpec'],
+    tagTypes: ["Vehicle", "VehicleSpec"],
     endpoints: (builder) => ({
         // --- VEHICLE SPECS ENDPOINTS ---
         // Get all vehicle specifications
         getVehicleSpecs: builder.query({
-            query: () => '/vehicle-specs',
+            query: () => "/vehicle-specs",
             providesTags: (result) => result
                 ? [
-                    ...result.map(({ vehicleSpec_id }) => ({ type: 'VehicleSpec', id: vehicleSpec_id })),
-                    { type: 'VehicleSpec', id: 'LIST' }
+                    ...result.map(({ vehicleSpec_id }) => ({
+                        type: "VehicleSpec",
+                        id: vehicleSpec_id,
+                    })),
+                    { type: "VehicleSpec", id: "LIST" },
                 ]
-                : [{ type: 'VehicleSpec', id: 'LIST' }],
+                : [{ type: "VehicleSpec", id: "LIST" }],
         }),
         // Get vehicle spec by ID
         getVehicleSpecById: builder.query({
             query: (id) => `/vehicle-specs/${id}`,
-            providesTags: (_result, _error, id) => [{ type: 'VehicleSpec', id }],
+            providesTags: (_result, _error, id) => [{ type: "VehicleSpec", id }],
         }),
         // Create vehicle specification
         createVehicleSpec: builder.mutation({
             query: (body) => ({
-                url: '/vehicle-specs',
-                method: 'POST',
+                url: "/vehicle-specs",
+                method: "POST",
                 body,
             }),
-            invalidatesTags: [{ type: 'VehicleSpec', id: 'LIST' }],
+            invalidatesTags: [{ type: "VehicleSpec", id: "LIST" }],
         }),
         // Update vehicle specification
         updateVehicleSpec: builder.mutation({
             query: ({ id, data }) => ({
                 url: `/vehicle-specs/${id}`,
-                method: 'PUT',
+                method: "PUT",
                 body: data,
             }),
             invalidatesTags: (_result, _error, { id }) => [
-                { type: 'VehicleSpec', id },
-                { type: 'VehicleSpec', id: 'LIST' }
+                { type: "VehicleSpec", id },
+                { type: "VehicleSpec", id: "LIST" },
             ],
         }),
         // Delete vehicle specification
         deleteVehicleSpec: builder.mutation({
             query: (id) => ({
                 url: `/vehicle-specs/${id}`,
-                method: 'DELETE',
+                method: "DELETE",
             }),
             invalidatesTags: (_result, _error, id) => [
-                { type: 'VehicleSpec', id },
-                { type: 'VehicleSpec', id: 'LIST' },
-                { type: 'Vehicle', id: 'LIST' } // Invalidate vehicles too since they might be affected
+                { type: "VehicleSpec", id },
+                { type: "VehicleSpec", id: "LIST" },
+                { type: "Vehicle", id: "LIST" }, // Invalidate vehicles too since they might be affected
             ],
         }),
         // --- VEHICLE ENDPOINTS ---
         //     // GET: Available Vehicles Only
         getAvailableVehicles: builder.query({
-            query: () => '/vehicles/available',
+            query: () => "/vehicles/available",
             transformResponse: (response) => {
                 // Preserving your robust response parsing
                 if (Array.isArray(response))
@@ -83,16 +86,21 @@ export const vehicleApi = createApi({
                 return []; // fallback
             },
             providesTags: (result) => {
-                const tags = (result ?? []).map(({ vehicle_id }) => ({ type: 'Vehicle', id: vehicle_id }));
-                tags.push({ type: 'Vehicle', id: 'AVAILABLE' });
+                const tags = (result ?? []).map(({ vehicle_id }) => ({
+                    type: "Vehicle",
+                    id: vehicle_id,
+                }));
+                tags.push({ type: "Vehicle", id: "AVAILABLE" });
                 return tags;
             },
         }),
         // Get all vehicles with specs
         getVehicles: builder.query({
-            query: () => '/vehicles',
+            query: () => "/vehicles",
             transformResponse: (response) => {
-                const rawData = Array.isArray(response) ? response : (response?.data || []);
+                const rawData = Array.isArray(response)
+                    ? response
+                    : response?.data || [];
                 return rawData.map((vehicle) => ({
                     vehicle_id: vehicle.vehicle_id,
                     vehicleSpec_id: vehicle.vehicleSpec_id,
@@ -128,58 +136,61 @@ export const vehicleApi = createApi({
             },
             providesTags: (result) => result
                 ? [
-                    ...result.map(({ vehicle_id }) => ({ type: 'Vehicle', id: vehicle_id })),
-                    { type: 'Vehicle', id: 'LIST' }
+                    ...result.map(({ vehicle_id }) => ({
+                        type: "Vehicle",
+                        id: vehicle_id,
+                    })),
+                    { type: "Vehicle", id: "LIST" },
                 ]
-                : [{ type: 'Vehicle', id: 'LIST' }],
+                : [{ type: "Vehicle", id: "LIST" }],
         }),
         // Get vehicle by ID
         getVehicleById: builder.query({
             query: (id) => `/vehicles/${id}`,
-            providesTags: (_result, _error, id) => [{ type: 'Vehicle', id }],
+            providesTags: (_result, _error, id) => [{ type: "Vehicle", id }],
         }),
         // Create vehicle
         addVehicle: builder.mutation({
             query: (body) => ({
-                url: '/vehicles',
-                method: 'POST',
+                url: "/vehicles",
+                method: "POST",
                 body,
             }),
-            invalidatesTags: [{ type: 'Vehicle', id: 'LIST' }],
+            invalidatesTags: [{ type: "Vehicle", id: "LIST" }],
         }),
         // Update vehicle
         updateVehicle: builder.mutation({
             query: ({ id, data }) => ({
                 url: `/vehicles/${id}`,
-                method: 'PUT',
+                method: "PUT",
                 body: data,
             }),
             invalidatesTags: (_result, _error, { id }) => [
-                { type: 'Vehicle', id },
-                { type: 'Vehicle', id: 'LIST' }
+                { type: "Vehicle", id },
+                { type: "Vehicle", id: "LIST" },
             ],
         }),
         // Delete vehicle
         deleteVehicle: builder.mutation({
             query: (id) => ({
                 url: `/vehicles/${id}`,
-                method: 'DELETE',
+                method: "DELETE",
             }),
             invalidatesTags: (_result, _error, id) => [
-                { type: 'Vehicle', id },
-                { type: 'Vehicle', id: 'LIST' }
+                { type: "Vehicle", id },
+                { type: "Vehicle", id: "LIST" },
             ],
         }),
         // Update vehicle status only
         updateVehicleStatus: builder.mutation({
             query: ({ id, status }) => ({
                 url: `/vehicles/${id}/status`,
-                method: 'PATCH',
+                method: "PATCH",
                 body: { status },
             }),
             invalidatesTags: (_result, _error, { id }) => [
-                { type: 'Vehicle', id },
-                { type: 'Vehicle', id: 'LIST' }
+                { type: "Vehicle", id },
+                { type: "Vehicle", id: "LIST" },
             ],
         }),
     }),

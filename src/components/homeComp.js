@@ -1,9 +1,9 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
 // components/Home.tsx
 import { useState } from "react";
-import Hero from "../components/Hero";
-import VehicleGrid from "../components/VehicleGrid";
-import VehicleFilter from "../components/VehicleFilter";
+import Hero from "./Hero";
+import VehicleGrid from "./VehicleGrid";
+import VehicleFilter from "./VehicleFilter";
 // Mock data based on your schema
 // ...existing code...
 const mockVehicles = [
@@ -268,7 +268,7 @@ const mockVehicles = [
         },
     },
 ];
-const Home = () => {
+const Homecomp = () => {
     const [vehicles] = useState(mockVehicles);
     const [filteredVehicles, setFilteredVehicles] = useState(mockVehicles);
     const [loading, setLoading] = useState(false);
@@ -313,4 +313,4 @@ const Home = () => {
     };
     return (_jsxs("main", { className: "flex-1", children: [_jsx("div", { className: "px-8", children: _jsx(Hero, {}) }), _jsxs("div", { className: "flex", children: [_jsx("div", { className: "w-80 flex-shrink-0 p-6", children: _jsx(VehicleFilter, { onFilterChange: handleFilterChange }) }), _jsxs("div", { className: "flex-1 p-6", children: [_jsxs("div", { className: "mb-8", children: [_jsx("h1", { className: "text-4xl font-bold text-[#001524] mb-4", children: "Luxury Supercar Fleet" }), _jsx("p", { className: "text-[#445048] text-lg", children: "Experience the thrill of driving the world's most exclusive supercars. Each vehicle is meticulously maintained and comes with comprehensive insurance." })] }), _jsx(VehicleGrid, { vehicles: filteredVehicles, loading: loading })] })] }), _jsx("div", { className: "bg-[#001524] rounded-2xl mx-6 my-8 p-8", children: _jsxs("div", { className: "grid grid-cols-1 md:grid-cols-4 gap-6 text-center", children: [_jsxs("div", { children: [_jsx("div", { className: "text-3xl font-bold text-[#F57251] mb-2", children: "50+" }), _jsx("div", { className: "text-[#E9E6DD]", children: "Premium Vehicles" })] }), _jsxs("div", { children: [_jsx("div", { className: "text-3xl font-bold text-[#027480] mb-2", children: "24/7" }), _jsx("div", { className: "text-[#E9E6DD]", children: "Customer Support" })] }), _jsxs("div", { children: [_jsx("div", { className: "text-3xl font-bold text-[#D6CC99] mb-2", children: "1000+" }), _jsx("div", { className: "text-[#E9E6DD]", children: "Happy Customers" })] }), _jsxs("div", { children: [_jsx("div", { className: "text-3xl font-bold text-[#C4AD9D] mb-2", children: "5\u2605" }), _jsx("div", { className: "text-[#E9E6DD]", children: "Average Rating" })] })] }) })] }));
 };
-export default Home;
+export default Homecomp;

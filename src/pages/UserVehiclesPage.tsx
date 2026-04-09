@@ -1,170 +1,167 @@
 import React, { useState, useMemo } from "react";
 import { useGetAvailableVehiclesQuery } from "../features/api/VehicleAPI";
-import VehicleCard from "../components/VehicleCard";
+import VehicleGrid from "../components/VehicleGrid";
+import VehicleFilter from "../components/VehicleFilter";
 import VehicleDetailsModal from "../Modals/VehicleDetailsModal";
+import { Search, Car } from "lucide-react";
 
 const UserVehiclesPage: React.FC = () => {
+  const { data: vehicles, isLoading, error } = useGetAvailableVehiclesQuery();
+
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(
     null,
   );
-  const [searchTerm, setSearchTerm] = useState("");
-  const [typeFilter, setTypeFilter] = useState("All");
 
-  // This is now guaranteed to be an array (or undefined while loading)
-  const {
-    data: vehicles = [],
-    isLoading,
-    error,
-  } = useGetAvailableVehiclesQuery();
-  console.log("REAL API DATA:", vehicles);
+  const [filters, setFilters] = useState({
+    search: "",
+    brands: [] as string[],
+    categories: [] as string[],
+    priceRange: [0, 1000] as [number, number],
+    minRating: 0,
+    transmission: [] as string[],
+    fuelType: [] as string[],
+  });
 
-  // Client-side filtering with useMemo for performance
-  const filteredVehicles = useMemo(() => {
-    return vehicles.filter((vehicle) => {
-      // 1. Safely handle manufacturer and model (fallback to empty string if undefined)
-      const manufacturer = (vehicle.manufacturer ?? "").toLowerCase();
-      const model = (vehicle.model ?? "").toLowerCase();
-      const search = searchTerm.toLowerCase();
-
-      const matchesSearch =
-        manufacturer.includes(search) || model.includes(search);
-
-      // 2. Ensure typeFilter matches or is 'All'
-      const matchesType =
-        typeFilter === "All" || vehicle.vehicle_type === typeFilter;
-
-      return matchesSearch && matchesType;
-    });
-  }, [vehicles, searchTerm, typeFilter]);
-
-  const vehicleTypes = [
-    "All",
-    "Sports Car",
-    "SUV",
-    "Sedan",
-    "Coupe",
-    "Convertible",
-  ];
-
-  const handleViewDetails = (vehicleId: number) =>
+  // ✅ HANDLE BUTTON CLICK (THIS OPENS MODAL)
+  const handleViewDetails = (vehicleId: number) => {
+    console.log("Opening modal for:", vehicleId); // debug (optional)
     setSelectedVehicleId(vehicleId);
-  const handleCloseModal = () => setSelectedVehicleId(null);
+  };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="space-y-6 p-6">
-        <div className="flex justify-between items-center">
+  const handleCloseModal = () => {
+    setSelectedVehicleId(null);
+  };
+
+  const handleFilterChange = (updatedFilters: typeof filters) => {
+    setFilters(updatedFilters);
+  };
+
+  // ✅ FILTER LOGIC
+  const filteredVehicles = useMemo(() => {
+    if (!vehicles) return [];
+
+    return vehicles.filter((vehicle) => {
+      const searchMatch =
+        (vehicle.manufacturer ?? "")
+          .toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
+        (vehicle.model ?? "")
+          .toLowerCase()
+          .includes(filters.search.toLowerCase());
+
+      const brandMatch =
+        filters.brands.length === 0 ||
+        filters.brands.includes(vehicle.manufacturer ?? "");
+
+      const categoryMatch =
+        filters.categories.length === 0 ||
+        filters.categories.includes(vehicle.vehicle_type ?? "");
+
+      const priceMatch =
+        vehicle.rental_rate >= filters.priceRange[0] &&
+        vehicle.rental_rate <= filters.priceRange[1];
+
+      const transmissionMatch =
+        filters.transmission.length === 0 ||
+        filters.transmission.includes(vehicle.transmission ?? "");
+
+      const fuelMatch =
+        filters.fuelType.length === 0 ||
+        filters.fuelType.includes(vehicle.fuel_type ?? "");
+
+      const ratingMatch =
+        !(vehicle as any).avg_rating ||
+        (vehicle as any).avg_rating >= filters.minRating;
+
+      return (
+        searchMatch &&
+        brandMatch &&
+        categoryMatch &&
+        priceMatch &&
+        transmissionMatch &&
+        fuelMatch &&
+        ratingMatch
+      );
+    });
+  }, [vehicles, filters]);
+
+  return (
+    <div className="flex flex-col lg:flex-row gap-6 h-screen overflow-hidden">
+      {/* Filter sidebar */}
+      <div className="lg:w-1/4 h-full">
+        <div className="h-full overflow-y-auto pr-2">
+          <VehicleFilter onFilterChange={handleFilterChange} />
+        </div>
+      </div>
+
+      {/* ================= MAIN CONTENT ================= */}
+      <div className="lg:w-3/4 space-y-6 overflow-y-auto h-full pr-2">
+        {/* HEADER */}
+        <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-[#001524] mb-2">
+            <h1 className="text-3xl font-bold text-[#001524]">
               Available Vehicles
             </h1>
             <p className="text-[#445048]">Browse our luxury fleet</p>
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-[#001524] rounded-2xl p-6 animate-pulse">
-              <div className="h-48 bg-[#445048]/50 rounded-lg mb-4" />
-              <div className="h-6 bg-[#445048]/50 rounded w-3/4 mb-3" />
-              <div className="h-4 bg-[#445048]/30 rounded w-1/2" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="text-center py-20">
-        <div className="text-6xl mb-4">Car car</div>
-        <h3 className="text-2xl font-bold text-[#001524] mb-2">
-          Error Loading Vehicles
-        </h3>
-        <p className="text-[#445048]">
-          Something went wrong. Please try again later.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6 p-6">
-      {/* Header + Controls */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-        <div>
-          <h1 className="text-3xl font-bold text-[#001524] mb-2">
-            Available Vehicles
-          </h1>
-          <p className="text-[#445048]">Browse our luxury fleet</p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 w-80 w-full lg:w-auto">
-          <div className="relative">
+          {/* SEARCH */}
+          <div className="relative w-full sm:w-64">
             <input
               type="text"
               placeholder="Search vehicles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 pl-10 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]"
+              value={filters.search}
+              onChange={(e) =>
+                setFilters({ ...filters, search: e.target.value })
+              }
+              className="w-full px-4 py-2 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]"
             />
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#C4AD9D]">
-              search
-            </span>
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-[#C4AD9D] w-4 h-4" />
           </div>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="px-4 py-2 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]"
-          >
-            {vehicleTypes.map((type) => (
-              <option key={type} value={type}>
-                {type}
-              </option>
-            ))}
-          </select>
         </div>
-      </div>
 
-      {/* Results counter */}
-      <p className="text-[#445048]">
-        Showing {filteredVehicles.length} of {vehicles.length} vehicles
-      </p>
-
-      {/* Vehicle Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredVehicles.map((vehicle) => (
-          <VehicleCard
-            key={vehicle.vehicle_id}
-            vehicle={vehicle}
-            onViewDetails={handleViewDetails}
-          />
-        ))}
-      </div>
-
-      {/* Empty state */}
-      {filteredVehicles.length === 0 && (
-        <div className="text-center py-20 bg-[#001524] rounded-2xl">
-          <div className="text-6xl mb-4">car</div>
-          <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
-            No vehicles found
-          </h3>
-          <p className="text-[#C4AD9D]">
-            Try adjusting your search or filters.
-          </p>
+        {/* RESULTS COUNT */}
+        <div className="text-[#445048]">
+          Showing {filteredVehicles.length} of {vehicles?.length || 0} vehicles
         </div>
-      )}
 
-      {/* Details Modal */}
-      {selectedVehicleId && (
-        <VehicleDetailsModal
-          vehicleId={selectedVehicleId}
-          onClose={handleCloseModal}
+        {/* ================= VEHICLE GRID ================= */}
+        <VehicleGrid
+          vehicles={filteredVehicles}
+          loading={isLoading}
+          onViewDetails={handleViewDetails} // ✅🔥 THIS FIXES EVERYTHING
         />
-      )}
+
+        {/* ================= MODAL ================= */}
+        {selectedVehicleId && (
+          <VehicleDetailsModal
+            vehicleId={selectedVehicleId}
+            onClose={handleCloseModal}
+          />
+        )}
+
+        {/* ================= ERROR ================= */}
+        {error && !isLoading && (
+          <div className="text-center py-12 bg-[#001524] rounded-2xl">
+            <Car className="mx-auto text-red-400 w-16 h-16 mb-4" />
+            <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
+              Error Loading Vehicles
+            </h3>
+            <p className="text-[#C4AD9D]">Please try again later.</p>
+          </div>
+        )}
+
+        {/* ================= EMPTY STATE ================= */}
+        {!isLoading && filteredVehicles.length === 0 && (
+          <div className="text-center py-12 bg-[#001524] rounded-2xl">
+            <Car className="mx-auto text-[#C4AD9D] w-16 h-16 mb-4" />
+            <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
+              No vehicles found
+            </h3>
+            <p className="text-[#C4AD9D]">Try adjusting your filters.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
