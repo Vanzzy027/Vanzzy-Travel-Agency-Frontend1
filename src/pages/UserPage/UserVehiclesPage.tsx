@@ -1,17 +1,16 @@
+// pages/UserVehiclesPage.tsx
 import React, { useState, useMemo } from "react";
-import { useGetAvailableVehiclesQuery } from "../features/api/VehicleAPI";
-import VehicleGrid from "../components/VehicleGrid";
-import VehicleFilter from "../components/VehicleFilter";
-import VehicleDetailsModal from "../Modals/VehicleDetailsModal";
+import { useGetAvailableVehiclesQuery } from "../../features/api/VehicleAPI";
+import VehicleGrid from "../../components/VehicleGrid";
+import VehicleFilter from "../../components/VehicleFilter";
+import VehicleDetailsModal from "../../Modals/VehicleDetailsModal";
 import { Search, Car } from "lucide-react";
 
 const UserVehiclesPage: React.FC = () => {
   const { data: vehicles, isLoading, error } = useGetAvailableVehiclesQuery();
-
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(
     null,
   );
-
   const [filters, setFilters] = useState({
     search: "",
     brands: [] as string[],
@@ -22,21 +21,13 @@ const UserVehiclesPage: React.FC = () => {
     fuelType: [] as string[],
   });
 
-  // ✅ HANDLE BUTTON CLICK (THIS OPENS MODAL)
-  const handleViewDetails = (vehicleId: number) => {
-    console.log("Opening modal for:", vehicleId); // debug (optional)
+  const handleViewDetails = (vehicleId: number) =>
     setSelectedVehicleId(vehicleId);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedVehicleId(null);
-  };
-
-  const handleFilterChange = (updatedFilters: typeof filters) => {
+  const handleCloseModal = () => setSelectedVehicleId(null);
+  const handleFilterChange = (updatedFilters: typeof filters) =>
     setFilters(updatedFilters);
-  };
 
-  // ✅ FILTER LOGIC
+  // Filter vehicles based on search & filters
   const filteredVehicles = useMemo(() => {
     if (!vehicles) return [];
 
@@ -86,17 +77,26 @@ const UserVehiclesPage: React.FC = () => {
   }, [vehicles, filters]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-screen overflow-hidden">
-      {/* Filter sidebar */}
-      <div className="lg:w-1/4 h-full">
-        <div className="h-full overflow-y-auto pr-2">
-          <VehicleFilter onFilterChange={handleFilterChange} />
-        </div>
+    <div className="flex flex-col lg:flex-row gap-6">
+      {/* MOBILE FILTER TRIGGER */}
+      <div className="lg:hidden">
+        <VehicleFilter onFilterChange={handleFilterChange} />
       </div>
 
-      {/* ================= MAIN CONTENT ================= */}
-      <div className="lg:w-3/4 space-y-6 overflow-y-auto h-full pr-2">
-        {/* HEADER */}
+      {/* DESKTOP SIDEBAR */}
+      {/* CRITICAL: We remove 'self-start' because we WANT the aside to 
+       stretch to the full height of its sibling (the grid). 
+       The INNER div is what actually sticks.
+    */}
+      <aside className="hidden lg:block lg:w-80 shrink-0 relative">
+        <div className="sticky top-24 h-fit">
+          <VehicleFilter onFilterChange={handleFilterChange} />
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT */}
+      <div className="flex-1 min-w-0 space-y-6">
+        {/* Header */}
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-[#001524]">
@@ -105,7 +105,6 @@ const UserVehiclesPage: React.FC = () => {
             <p className="text-[#445048]">Browse our luxury fleet</p>
           </div>
 
-          {/* SEARCH */}
           <div className="relative w-full sm:w-64">
             <input
               type="text"
@@ -120,30 +119,31 @@ const UserVehiclesPage: React.FC = () => {
           </div>
         </div>
 
-        {/* RESULTS COUNT */}
+        {/* Results Count */}
         <div className="text-[#445048]">
           Showing {filteredVehicles.length} of {vehicles?.length || 0} vehicles
         </div>
 
-        {/* ================= VEHICLE GRID ================= */}
+        {/* Vehicle Grid */}
         <VehicleGrid
           vehicles={filteredVehicles}
           loading={isLoading}
-          onViewDetails={handleViewDetails} // ✅🔥 THIS FIXES EVERYTHING
+          onViewDetails={handleViewDetails}
+          onRentVehicle={handleViewDetails}
         />
 
-        {/* ================= MODAL ================= */}
-        {selectedVehicleId && (
+        {/* MODAL (ONLY ONCE) */}
+        {selectedVehicleId !== null && (
           <VehicleDetailsModal
             vehicleId={selectedVehicleId}
             onClose={handleCloseModal}
           />
         )}
 
-        {/* ================= ERROR ================= */}
+        {/* Error */}
         {error && !isLoading && (
           <div className="text-center py-12 bg-[#001524] rounded-2xl">
-            <Car className="mx-auto text-red-400 w-16 h-16 mb-4" />
+            <div className="text-6xl mb-4">🚗</div>
             <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
               Error Loading Vehicles
             </h3>
@@ -151,7 +151,7 @@ const UserVehiclesPage: React.FC = () => {
           </div>
         )}
 
-        {/* ================= EMPTY STATE ================= */}
+        {/* Empty */}
         {!isLoading && filteredVehicles.length === 0 && (
           <div className="text-center py-12 bg-[#001524] rounded-2xl">
             <Car className="mx-auto text-[#C4AD9D] w-16 h-16 mb-4" />

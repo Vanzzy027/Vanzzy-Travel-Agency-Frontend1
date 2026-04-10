@@ -10,7 +10,7 @@ const Navbar = () => {
     };
     const navLinks = [
         { path: "/", label: "Home" },
-        // { path: "/fleet", label: "Fleet" },
+        { path: "/fleet", label: "Fleet" }, //This is where you should make sure it maps to the correct route for the fleet page
         { path: "/about", label: "About Us" },
         { path: "/contact", label: "Contact Us" },
     ];

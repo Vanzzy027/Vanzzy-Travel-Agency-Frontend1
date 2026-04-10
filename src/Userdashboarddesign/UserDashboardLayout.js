@@ -7,6 +7,7 @@ import AIChatBot from "../components/AIChatBot";
 const UserDashboardLayout = () => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
     // Detect screen size
     useEffect(() => {
         const checkMobile = () => {
@@ -46,15 +47,9 @@ const UserDashboardLayout = () => {
           transition-all duration-300 ease-in-out shadow-2xl
           ${isSidebarCollapsed ? "w-20" : "w-64"}
         `, children: _jsx(UserSidebar, { isCollapsed: isSidebarCollapsed, onToggleCollapse: toggleSidebar, isMobile: isMobile }) }), _jsxs("div", { className: `
-          flex-1 flex flex-col min-h-screen
-          transition-all duration-300 ease-in-out
-          ${
-                /*
-                 On Mobile: Always keep 20 (80px) margin so icons are visible,
-                 but content stays put when sidebar expands over it.
-                 On Desktop: Margin moves with sidebar.
-              */ ""}
-          ${isMobile ? "ml-20" : isSidebarCollapsed ? "ml-20" : "ml-64"}
-        `, children: [_jsx(DashboardNavbar, { userType: "user" }), _jsxs("main", { className: "flex-1 p-4 md:p-6 overflow-x-hidden", children: [_jsx(Outlet, {}), _jsx(AIChatBot, {}), " "] })] })] }));
+    flex-1 flex flex-col min-h-screen
+    transition-all duration-300 ease-in-out
+    ${isMobile ? "ml-20" : isSidebarCollapsed ? "ml-24" : "ml-72"} 
+  `, children: [_jsx(DashboardNavbar, { userType: "user" }), _jsxs("main", { className: "p-4 md:p-6", children: [_jsx(Outlet, {}), _jsx("button", { onClick: () => setIsChatOpen(true), className: "fixed bottom-3 right-4 z-50 bg-[#027480] text-white px-5 py-3 rounded-full \nflex items-center gap-2\ntransition-all duration-300\nhover:scale-110 active:scale-95\nshadow-[0_0_15px_rgba(2,116,128,0.7)]\nanimate-pulse", children: _jsx("span", { className: "text-sm font-bold uppercase tracking-wider", children: "Chat" }) }), isChatOpen && _jsx(AIChatBot, { onClose: () => setIsChatOpen(false) })] })] })] }));
 };
 export default UserDashboardLayout;

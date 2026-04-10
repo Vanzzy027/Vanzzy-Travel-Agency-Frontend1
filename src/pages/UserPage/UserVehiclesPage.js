@@ -1,0 +1,58 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+// pages/UserVehiclesPage.tsx
+import { useState, useMemo } from "react";
+import { useGetAvailableVehiclesQuery } from "../../features/api/VehicleAPI";
+import VehicleGrid from "../../components/VehicleGrid";
+import VehicleFilter from "../../components/VehicleFilter";
+import VehicleDetailsModal from "../../Modals/VehicleDetailsModal";
+import { Search, Car } from "lucide-react";
+const UserVehiclesPage = () => {
+    const { data: vehicles, isLoading, error } = useGetAvailableVehiclesQuery();
+    const [selectedVehicleId, setSelectedVehicleId] = useState(null);
+    const [filters, setFilters] = useState({
+        search: "",
+        brands: [],
+        categories: [],
+        priceRange: [0, 1000],
+        minRating: 0,
+        transmission: [],
+        fuelType: [],
+    });
+    const handleViewDetails = (vehicleId) => setSelectedVehicleId(vehicleId);
+    const handleCloseModal = () => setSelectedVehicleId(null);
+    const handleFilterChange = (updatedFilters) => setFilters(updatedFilters);
+    // Filter vehicles based on search & filters
+    const filteredVehicles = useMemo(() => {
+        if (!vehicles)
+            return [];
+        return vehicles.filter((vehicle) => {
+            const searchMatch = (vehicle.manufacturer ?? "")
+                .toLowerCase()
+                .includes(filters.search.toLowerCase()) ||
+                (vehicle.model ?? "")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase());
+            const brandMatch = filters.brands.length === 0 ||
+                filters.brands.includes(vehicle.manufacturer ?? "");
+            const categoryMatch = filters.categories.length === 0 ||
+                filters.categories.includes(vehicle.vehicle_type ?? "");
+            const priceMatch = vehicle.rental_rate >= filters.priceRange[0] &&
+                vehicle.rental_rate <= filters.priceRange[1];
+            const transmissionMatch = filters.transmission.length === 0 ||
+                filters.transmission.includes(vehicle.transmission ?? "");
+            const fuelMatch = filters.fuelType.length === 0 ||
+                filters.fuelType.includes(vehicle.fuel_type ?? "");
+            const ratingMatch = !vehicle.avg_rating ||
+                vehicle.avg_rating >= filters.minRating;
+            return (searchMatch &&
+                brandMatch &&
+                categoryMatch &&
+                priceMatch &&
+                transmissionMatch &&
+                fuelMatch &&
+                ratingMatch);
+        });
+    }, [vehicles, filters]);
+    return (_jsxs("div", { className: "flex flex-col lg:flex-row gap-6", children: [_jsx("div", { className: "lg:hidden", children: _jsx(VehicleFilter, { onFilterChange: handleFilterChange }) }), _jsx("aside", { className: "hidden lg:block lg:w-80 shrink-0 relative", children: _jsx("div", { className: "sticky top-24 h-fit", children: _jsx(VehicleFilter, { onFilterChange: handleFilterChange }) }) }), _jsxs("div", { className: "flex-1 min-w-0 space-y-6", children: [_jsxs("div", { className: "flex justify-between items-center flex-wrap gap-4", children: [_jsxs("div", { children: [_jsx("h1", { className: "text-3xl font-bold text-[#001524]", children: "Available Vehicles" }), _jsx("p", { className: "text-[#445048]", children: "Browse our luxury fleet" })] }), _jsxs("div", { className: "relative w-full sm:w-64", children: [_jsx("input", { type: "text", placeholder: "Search vehicles...", value: filters.search, onChange: (e) => setFilters({ ...filters, search: e.target.value }), className: "w-full px-4 py-2 bg-[#001524] text-[#E9E6DD] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#027480]" }), _jsx(Search, { className: "absolute right-3 top-1/2 -translate-y-1/2 text-[#C4AD9D] w-4 h-4" })] })] }), _jsxs("div", { className: "text-[#445048]", children: ["Showing ", filteredVehicles.length, " of ", vehicles?.length || 0, " vehicles"] }), _jsx(VehicleGrid, { vehicles: filteredVehicles, loading: isLoading, onViewDetails: handleViewDetails, onRentVehicle: handleViewDetails }), selectedVehicleId !== null && (_jsx(VehicleDetailsModal, { vehicleId: selectedVehicleId, onClose: handleCloseModal })), error && !isLoading && (_jsxs("div", { className: "text-center py-12 bg-[#001524] rounded-2xl", children: [_jsx("div", { className: "text-6xl mb-4", children: "\uD83D\uDE97" }), _jsx("h3", { className: "text-2xl font-bold text-[#E9E6DD] mb-2", children: "Error Loading Vehicles" }), _jsx("p", { className: "text-[#C4AD9D]", children: "Please try again later." })] })), !isLoading && filteredVehicles.length === 0 && (_jsxs("div", { className: "text-center py-12 bg-[#001524] rounded-2xl", children: [_jsx(Car, { className: "mx-auto text-[#C4AD9D] w-16 h-16 mb-4" }), _jsx("h3", { className: "text-2xl font-bold text-[#E9E6DD] mb-2", children: "No vehicles found" }), _jsx("p", { className: "text-[#C4AD9D]", children: "Try adjusting your filters." })] }))] })] }));
+};
+export default UserVehiclesPage;

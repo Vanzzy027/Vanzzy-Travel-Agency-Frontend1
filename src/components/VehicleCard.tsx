@@ -2,6 +2,9 @@
 import React from "react";
 import type { VehicleWithSpecs } from "../features/api/VehicleAPI";
 import { Settings, Droplet, Users, Car, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import type { RootState } from "../store/store";
+import { useSelector } from "react-redux";
 
 interface VehicleCardProps {
   vehicle: VehicleWithSpecs;
@@ -53,6 +56,12 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
     vehicle.on_promo && vehicle.promo_rate
       ? Math.round(vehicle.rental_rate * (1 - vehicle.promo_rate / 100))
       : vehicle.rental_rate;
+
+  // --- Auth state from Redux ---
+  const navigate = useNavigate();
+  const isAuthenticated = useSelector(
+    (state: RootState) => state.auth.isAuthenticated,
+  );
 
   return (
     <div className="bg-[#001524] rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 group w-full">
@@ -177,6 +186,7 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
 
           {/* Buttons */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {/* DETAILS */}
             <button
               onClick={() => onViewDetails?.(vehicle.vehicle_id)}
               className="w-full bg-cyan-500 text-white px-4 py-2 rounded-lg hover:bg-cyan-600 transition text-sm font-semibold"
@@ -184,16 +194,27 @@ const VehicleCard: React.FC<VehicleCardProps> = ({
               Details
             </button>
 
+            {/* RENT BUTTON (SMART) */}
             <button
-              onClick={() => onRentVehicle?.(vehicle.vehicle_id)}
-              disabled={vehicle.status !== "Available"}
+              onClick={() => {
+                if (!isAuthenticated) {
+                  navigate("/login");
+                  return;
+                }
+
+                onRentVehicle?.(vehicle.vehicle_id);
+              }}
               className={`w-full px-4 py-2 rounded-lg text-sm font-semibold transition ${
                 vehicle.status === "Available"
                   ? "bg-orange-500 text-white hover:bg-orange-600"
                   : "bg-gray-700 text-gray-300 cursor-not-allowed"
               }`}
             >
-              {vehicle.status === "Available" ? "Rent Now" : vehicle.status}
+              {!isAuthenticated
+                ? "Login to Rent"
+                : vehicle.status === "Available"
+                  ? "Rent Now"
+                  : vehicle.status}
             </button>
           </div>
         </div>

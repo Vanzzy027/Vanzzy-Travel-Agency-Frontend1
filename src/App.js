@@ -8,13 +8,14 @@ import AdminDashboardLayout from "./Userdashboarddesign/AdminDashboardLayout";
 import SuperAdminDashboardLayout from "./Userdashboarddesign/SuperAdminDashboardLayout";
 // --- PAGES ---
 import Home from "./pages/home";
+import FleetPage from "./pages/FleetPage";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ContactPage from "./pages/ContactPage";
 import About from "./pages/About";
 // User Pages
 import UserDashboardHome from "./pages/UserPage/MyDashboard";
-import UserVehiclesPage from "./pages/UserPage/VehiclesPage";
+import UserVehiclesPage from "./pages/UserPage/UserVehiclesPage";
 import UserBookingsPage from "./pages/UserPage/My Bookings";
 import UserReceiptsPage from "./pages/UserPage/UserReceipts";
 import UserPaymentsPage from "./pages/UserPage/UserPaymentsPage";
@@ -61,6 +62,7 @@ function App() {
                 { path: "register", element: _jsx(Register, {}) },
                 { path: "contact", element: _jsx(ContactPage, {}) },
                 { path: "about", element: _jsx(About, {}) },
+                { path: "fleet", element: _jsx(FleetPage, {}) },
                 { path: "receipt/:paymentId", element: _jsx(ReceiptPage, {}) }, // NEW: Receipt page route for both user and admin receipts (public access, but will handle auth inside the component)
             ],
         },

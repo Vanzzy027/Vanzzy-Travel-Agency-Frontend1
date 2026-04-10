@@ -145,17 +145,6 @@ const Footer: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Floating Call Button */}
-      <div className="fixed bottom-4 right-4 md:hidden">
-        <a
-          href="tel:+254112178578"
-          aria-label="Call VansKE"
-          className="bg-[#F57251] text-[#E9E6DD] w-12 h-12 rounded-full shadow-lg hover:bg-[#e56546] transition-colors flex items-center justify-center"
-        >
-          <Phone size={20} />
-        </a>
-      </div>
     </footer>
   );
 };

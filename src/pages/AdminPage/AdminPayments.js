@@ -6,29 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { useGetAllReceiptsQuery } from "../../features/api/paymentApi";
 import { CreditCard, DollarSign, Search, Download, Eye, TrendingUp, Shield, } from "lucide-react";
 import { format } from "date-fns";
-// interface Payment {
-//   payment_id: number;
-//   booking_id: number;
-//   user_id: string;
-//   amount: number;
-//   gross_amount: number;
-//   commission_fee: number;
-//   net_amount: number;
-//   payment_status: string;
-//   payment_method: string;
-//   transaction_id: string;
-//   transaction_reference: string;
-//   phone: string;
-//   payment_date: string;
-//   created_at: string;
-//   first_name?: string;
-//   last_name?: string;
-//   email?: string;
-//   booking_date?: string;
-//   return_date?: string;
-//   vehicle_make?: string;
-//   vehicle_model?: string;
-// }
 const AdminPayments = () => {
     const navigate = useNavigate();
     // 2. REPLACE manual fetch/states with RTK Query

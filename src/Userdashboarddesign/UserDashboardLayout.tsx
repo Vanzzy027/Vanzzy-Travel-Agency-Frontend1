@@ -7,6 +7,7 @@ import AIChatBot from "../components/AIChatBot";
 const UserDashboardLayout: React.FC = () => {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // Detect screen size
   useEffect(() => {
@@ -78,28 +79,36 @@ const UserDashboardLayout: React.FC = () => {
       </aside>
 
       {/* MAIN CONTENT WRAPPER */}
+
       <div
         className={`
-          flex-1 flex flex-col min-h-screen
-          transition-all duration-300 ease-in-out
-          ${
-            /* 
-             On Mobile: Always keep 20 (80px) margin so icons are visible, 
-             but content stays put when sidebar expands over it.
-             On Desktop: Margin moves with sidebar.
-          */ ""
-          }
-          ${isMobile ? "ml-20" : isSidebarCollapsed ? "ml-20" : "ml-64"}
-        `}
+    flex-1 flex flex-col min-h-screen
+    transition-all duration-300 ease-in-out
+    ${isMobile ? "ml-20" : isSidebarCollapsed ? "ml-24" : "ml-72"} 
+  `}
       >
         {/* Dashboard Navbar */}
         <DashboardNavbar userType="user" />
 
         {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 overflow-x-hidden">
+        <main className="p-4 md:p-6">
           <Outlet />
-          <AIChatBot />{" "}
-          {/* AI Chat Bot is now part of the main content area, so it will be present on all dashboard pages */}
+
+          <button
+            onClick={() => setIsChatOpen(true)}
+            className="fixed bottom-3 right-4 z-50 bg-[#027480] text-white px-5 py-3 rounded-full 
+flex items-center gap-2
+transition-all duration-300
+hover:scale-110 active:scale-95
+shadow-[0_0_15px_rgba(2,116,128,0.7)]
+animate-pulse"
+          >
+            <span className="text-sm font-bold uppercase tracking-wider">
+              Chat
+            </span>
+          </button>
+
+          {isChatOpen && <AIChatBot onClose={() => setIsChatOpen(false)} />}
         </main>
       </div>
     </div>

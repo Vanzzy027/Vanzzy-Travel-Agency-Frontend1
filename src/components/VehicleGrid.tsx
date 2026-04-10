@@ -42,9 +42,6 @@ const VehicleGrid: React.FC<VehicleGridProps> = ({
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-[#E9E6DD]">
-          Available Supercars ({vehicles.length})
-        </h2>
         <div className="flex items-center space-x-4">
           <select className="bg-[#445048] text-[#E9E6DD] rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#027480]">
             <option>Sort by: Featured</option>

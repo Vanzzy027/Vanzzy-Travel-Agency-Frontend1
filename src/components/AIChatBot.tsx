@@ -27,12 +27,16 @@ interface User {
   id?: number;
 }
 
+interface Props {
+  onClose: () => void;
+}
+
 interface ChatMessage {
   role: string;
   parts: { text: string }[];
 }
 
-const AIChatBot: React.FC = () => {
+const AIChatBot: React.FC<Props> = ({ onClose }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -126,6 +130,18 @@ const AIChatBot: React.FC = () => {
 
   return (
     <div className="fixed bottom-6 right-6 z-[9999] font-sans">
+      <div className="fixed inset-0 z-50">
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+
+        {/* Chat panel */}
+        <div className="absolute bottom-0 right-0 left-0 md:left-auto md:w-[400px] bg-white rounded-t-2xl md:rounded-2xl p-4">
+          {/* Chat content */}
+
+          <button onClick={onClose}>Close</button>
+        </div>
+      </div>
+
       {/* Toggle Button */}
       {!isOpen && (
         <button
