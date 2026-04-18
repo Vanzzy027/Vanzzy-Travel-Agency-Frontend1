@@ -141,7 +141,7 @@ const UserVehiclesPage: React.FC = () => {
         )}
 
         {/* Error */}
-        {error && !isLoading && (
+        {/* {error && !isLoading && (
           <div className="text-center py-12 bg-[#001524] rounded-2xl">
             <div className="text-6xl mb-4">🚗</div>
             <h3 className="text-2xl font-bold text-[#E9E6DD] mb-2">
@@ -149,7 +149,7 @@ const UserVehiclesPage: React.FC = () => {
             </h3>
             <p className="text-[#C4AD9D]">Please try again later.</p>
           </div>
-        )}
+        )} */}
 
         {/* Empty */}
         {!isLoading && filteredVehicles.length === 0 && (

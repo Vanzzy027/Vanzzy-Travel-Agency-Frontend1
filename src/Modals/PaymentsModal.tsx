@@ -85,6 +85,8 @@ declare global {
   }
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
+
 const PaymentModal: React.FC<PaymentModalProps> = ({
   isOpen,
   onClose,
@@ -387,7 +389,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
 
       // Call backend payment endpoint
       const backendResponse = await fetch(
-        "https://vanske-car-rental.azurewebsites.net/api/payments/initialize",
+        `${API_BASE_URL}/api/payments/initialize`,
         {
           method: "POST",
           headers: {

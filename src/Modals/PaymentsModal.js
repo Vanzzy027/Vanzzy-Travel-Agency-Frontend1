@@ -259,7 +259,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, bookingData, userData, vehic
             // Save payment details for UI
             setPaymentDetails(response);
             // Call backend payment endpoint
-            const backendResponse = await fetch("https://vanske-car-rental.azurewebsites.net/api/payments/initialize", {
+            const backendResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/initialize`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

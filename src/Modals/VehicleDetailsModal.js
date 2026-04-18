@@ -60,7 +60,7 @@ const VehicleDetailsModal = ({ vehicleId, onClose, vehicleData, }) => {
                     }
                 }
                 // If not found, fetch from API
-                const response = await fetch(`https://vanske-car-rental.azurewebsites.net/api/vehicles/${vehicleId}`);
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/vehicles/${vehicleId}`);
                 if (response.ok) {
                     const data = await response.json();
                     setVehicle(data.data || data);

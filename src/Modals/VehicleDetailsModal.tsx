@@ -28,6 +28,9 @@ interface VehicleDetailsModalProps {
   vehicleData?: any; // Optional: If you want to pass vehicle data directly
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
+//baseUrl: `${API_BASE_URL}/api`,
+
 const VehicleDetailsModal: React.FC<VehicleDetailsModalProps> = ({
   vehicleId,
   onClose,
@@ -98,7 +101,7 @@ const VehicleDetailsModal: React.FC<VehicleDetailsModalProps> = ({
 
         // If not found, fetch from API
         const response = await fetch(
-          `https://vanske-car-rental.azurewebsites.net/api/vehicles/${vehicleId}`,
+          `${API_BASE_URL}/api/vehicles/${vehicleId}`,
         );
         if (response.ok) {
           const data = await response.json();

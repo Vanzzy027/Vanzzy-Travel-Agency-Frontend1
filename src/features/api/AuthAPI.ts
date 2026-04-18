@@ -1,4 +1,4 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 interface LoginRequest {
   email: string;
@@ -54,13 +54,13 @@ interface ResetPasswordResponse {
 const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
 
 export const AuthApi = createApi({
-  reducerPath: 'authApi',
+  reducerPath: "authApi",
   baseQuery: fetchBaseQuery({
     baseUrl: `${API_BASE_URL}/api/auth/`,
     prepareHeaders: (headers) => {
-      const token = localStorage.getItem('token');  
+      const token = localStorage.getItem("token");
       if (token) {
-        headers.set('authorization', `Bearer ${token}`);
+        headers.set("authorization", `Bearer ${token}`);
       }
       return headers;
     },
@@ -68,47 +68,52 @@ export const AuthApi = createApi({
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: 'login',
-        method: 'POST',
+        url: "login",
+        method: "POST",
         body: credentials,
       }),
     }),
     register: builder.mutation({
       query: (userData) => ({
-        url: 'register',
-        method: 'POST',
+        url: "register",
+        method: "POST",
         body: userData,
       }),
     }),
-    forgotPassword: builder.mutation<ForgotPasswordResponse, ForgotPasswordRequest>({
+    forgotPassword: builder.mutation<
+      ForgotPasswordResponse,
+      ForgotPasswordRequest
+    >({
       query: (emailData) => ({
-        url: 'forgot-password',
-        method: 'POST',
+        url: "forgot-password",
+        method: "POST",
         body: emailData,
       }),
     }),
     verifyOTP: builder.mutation<VerifyOTPResponse, VerifyOTPRequest>({
       query: (otpData) => ({
-        url: 'verify-otp',
-        method: 'POST',
+        url: "verify-otp",
+        method: "POST",
         body: otpData,
       }),
     }),
-    resetPassword: builder.mutation<ResetPasswordResponse, ResetPasswordRequest>({
+    resetPassword: builder.mutation<
+      ResetPasswordResponse,
+      ResetPasswordRequest
+    >({
       query: (resetData) => ({
-        url: 'reset-password',
-        method: 'POST',
+        url: "reset-password",
+        method: "POST",
         body: resetData,
       }),
     }),
   }),
 });
 
-export const { 
-  useLoginMutation, 
+export const {
+  useLoginMutation,
   useRegisterMutation,
   useForgotPasswordMutation,
   useVerifyOTPMutation,
-  useResetPasswordMutation
+  useResetPasswordMutation,
 } = AuthApi;
-
