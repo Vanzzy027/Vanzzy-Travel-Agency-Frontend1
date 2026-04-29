@@ -1,47 +1,122 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
+// import { createApi } from "@reduxjs/toolkit/query/react";
+// import { baseQueryWithReauth } from "./baseQuery";
+// // Types
+// export interface Ticket {
+//   ticket_id: number;
+//   user_id: string;
+//   subject: string;
+//   category: string;
+//   priority: "Low" | "Medium" | "High";
+//   description: string;
+//   status: "Open" | "In Progress" | "Resolved" | "Closed";
+//   admin_response?: string;
+//   created_at: string;
+//   updated_at: string;
+//   full_name?: string;
+//   email?: string;
+// }
+// export interface UpdateTicketPayload {
+//   ticket_id: number;
+//   status: string;
+//   admin_response: string;
+// }
+// // API
+// export const ticketApi = createApi({
+//   reducerPath: "ticketApi",
+//   // ✅ USE YOUR CUSTOM BASE QUERY
+//   baseQuery: baseQueryWithReauth,
+//   tagTypes: ["Tickets", "AdminTickets"],
+//   endpoints: (builder) => ({
+//     getUserTickets: builder.query<Ticket[], string>({
+//       query: (userId) => `/tickets/user/${userId}`,
+//       providesTags: ["Tickets"],
+//     }),
+//     createTicket: builder.mutation<void, Partial<Ticket>>({
+//       query: (body) => ({
+//         url: "/tickets",
+//         method: "POST",
+//         body,
+//       }),
+//       invalidatesTags: ["Tickets", "AdminTickets"],
+//     }),
+//     getAllTickets: builder.query<Ticket[], void>({
+//       query: () => "/tickets",
+//       providesTags: ["AdminTickets"],
+//     }),
+//     updateTicketStatus: builder.mutation<void, UpdateTicketPayload>({
+//       query: ({ ticket_id, ...body }) => ({
+//         url: `/tickets/${ticket_id}`,
+//         method: "PUT",
+//         body,
+//       }),
+//       invalidatesTags: ["AdminTickets", "Tickets"],
+//     }),
+//   }),
+// });
+// export const {
+//   useGetUserTicketsQuery,
+//   useCreateTicketMutation,
+//   useGetAllTicketsQuery,
+//   useUpdateTicketStatusMutation,
+// } = ticketApi;
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "./baseQuery";
+// API
 export const ticketApi = createApi({
-    reducerPath: 'ticketApi',
-    baseQuery: fetchBaseQuery({
-        baseUrl: `${API_BASE_URL}/api`, // Update with your actual port
-        prepareHeaders: (headers) => {
-            // In a real app, attach Admin Token here
-            const token = localStorage.getItem('token');
-            if (token)
-                headers.set('authorization', `Bearer ${token}`);
-            return headers;
-        },
-    }),
-    tagTypes: ['Tickets', 'AdminTickets'],
+    reducerPath: "ticketApi",
+    // ✅ Perfectly implemented!
+    baseQuery: baseQueryWithReauth,
+    tagTypes: ["Tickets", "AdminTickets"],
     endpoints: (builder) => ({
-        // User: Get own tickets
         getUserTickets: builder.query({
-            query: (userId) => `/tickets/user/${userId}`,
-            providesTags: ['Tickets'],
+            // Removed leading slash for consistency
+            query: (userId) => `tickets/user/${userId}`,
+            providesTags: (result) => result
+                ? [
+                    ...result.map(({ ticket_id }) => ({
+                        type: "Tickets",
+                        id: ticket_id,
+                    })),
+                    { type: "Tickets", id: "LIST" },
+                ]
+                : [{ type: "Tickets", id: "LIST" }],
         }),
-        // User: Create ticket
         createTicket: builder.mutation({
             query: (body) => ({
-                url: '/tickets',
-                method: 'POST',
+                url: "tickets", // Removed leading slash
+                method: "POST",
                 body,
             }),
-            invalidatesTags: ['Tickets', 'AdminTickets'], // Invalidate Admin list too
+            // Invalidate the LIST so the new ticket appears, but don't dump the individual caches
+            invalidatesTags: [
+                { type: "Tickets", id: "LIST" },
+                { type: "AdminTickets", id: "LIST" },
+            ],
         }),
-        // Admin: Get ALL tickets
         getAllTickets: builder.query({
-            query: () => '/tickets',
-            providesTags: ['AdminTickets'],
+            query: () => "tickets", // Removed leading slash
+            providesTags: (result) => result
+                ? [
+                    ...result.map(({ ticket_id }) => ({
+                        type: "AdminTickets",
+                        id: ticket_id,
+                    })),
+                    { type: "AdminTickets", id: "LIST" },
+                ]
+                : [{ type: "AdminTickets", id: "LIST" }],
         }),
-        // Admin: Update status & reply
         updateTicketStatus: builder.mutation({
             query: ({ ticket_id, ...body }) => ({
-                url: `/tickets/${ticket_id}`,
-                method: 'PUT',
+                url: `tickets/${ticket_id}`, // Removed leading slash
+                method: "PUT",
                 body,
             }),
-            invalidatesTags: ['AdminTickets', 'Tickets'], // Refresh both lists
+            // 🔥 Now it ONLY updates the specific ticket that was changed!
+            invalidatesTags: (_result, _error, { ticket_id }) => [
+                { type: "AdminTickets", id: ticket_id },
+                { type: "Tickets", id: ticket_id },
+            ],
         }),
     }),
 });
-export const { useGetUserTicketsQuery, useCreateTicketMutation, useGetAllTicketsQuery, useUpdateTicketStatusMutation } = ticketApi;
+export const { useGetUserTicketsQuery, useCreateTicketMutation, useGetAllTicketsQuery, useUpdateTicketStatusMutation, } = ticketApi;

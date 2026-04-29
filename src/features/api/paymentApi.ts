@@ -1,6 +1,8 @@
-// src/features/api/paymentApi.ts
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
 
+import { baseQueryWithReauth } from "./baseQuery";
+
+// --- INTERFACES --- (Unchanged)
 interface ReceiptResponse {
   success: boolean;
   data: {
@@ -61,23 +63,14 @@ interface UserReceipt {
   phone: string; // ADDED
 }
 
-// Get the base URL from environment variables
-const API_BASE_URL = import.meta.env.VITE_API_URL;
-
 export const paymentApi = createApi({
   reducerPath: "paymentApi",
-  baseQuery: fetchBaseQuery({
-    // This will result in: https://vanske-car-rental.azurewebsites.net/api/payments
-    baseUrl: `${API_BASE_URL}/api/payments`,
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+
+  // 🚨 USE YOUR CUSTOM BASE QUERY HERE!
+  baseQuery: baseQueryWithReauth,
+
   tagTypes: ["Payment", "Receipt"],
+
   endpoints: (builder) => ({
     // Get receipt by payment ID or booking ID
     getReceipt: builder.query<
@@ -85,10 +78,11 @@ export const paymentApi = createApi({
       { paymentId?: number; bookingId?: number }
     >({
       query: ({ paymentId, bookingId }) => {
+        // 🚨 Added "payments/" prefix to match your old baseUrl behavior
         if (paymentId) {
-          return `/${paymentId}/receipt`;
+          return `payments/${paymentId}/receipt`;
         }
-        return `/receipt${bookingId ? `?bookingId=${bookingId}` : ""}`;
+        return `payments/receipt${bookingId ? `?bookingId=${bookingId}` : ""}`;
       },
       providesTags: (result, _, { paymentId }) =>
         result ? [{ type: "Receipt", id: paymentId }] : ["Receipt"],
@@ -97,7 +91,7 @@ export const paymentApi = createApi({
     // Initialize payment
     initializePayment: builder.mutation({
       query: (paymentData: PaymentRequest) => ({
-        url: "/initialize",
+        url: "payments/initialize", // 👈 Added prefix
         method: "POST",
         body: paymentData,
       }),
@@ -109,7 +103,7 @@ export const paymentApi = createApi({
       { success: boolean; data: UserReceipt[] },
       void
     >({
-      query: () => "/my-receipts",
+      query: () => "payments/my-receipts", // 👈 Added prefix
       providesTags: ["Receipt"],
     }),
 
@@ -118,13 +112,13 @@ export const paymentApi = createApi({
       { success: boolean; data: UserReceipt[] },
       void
     >({
-      query: () => "/all-receipts",
+      query: () => "payments/all-receipts", // 👈 Added prefix
       providesTags: ["Receipt"],
     }),
 
     // Get payment by booking ID
     getPaymentByBooking: builder.query({
-      query: (bookingId: number) => `/booking/${bookingId}`,
+      query: (bookingId: number) => `payments/booking/${bookingId}`, // 👈 Added prefix
       providesTags: (result, _, bookingId) =>
         result ? [{ type: "Payment", id: bookingId }] : ["Payment"],
     }),

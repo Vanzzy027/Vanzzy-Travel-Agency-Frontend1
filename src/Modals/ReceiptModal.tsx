@@ -1,21 +1,22 @@
-import React, { useRef, useState } from 'react';
-import { QRCodeSVG } from 'qrcode.react';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { 
-  X, 
-  Download, 
-  Printer, 
-  Share2, 
+import React, { useRef, useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import {
+  X,
+  Download,
+  Printer,
+  Share2,
   CheckCircle,
   Car,
   Calendar,
-  CreditCard,
   User,
   MapPin,
   Mail,
-  Phone
-} from 'lucide-react';
+  Phone,
+  Ticket,
+  Globe,
+} from "lucide-react";
 
 interface ReceiptModalProps {
   isOpen: boolean;
@@ -54,347 +55,370 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
   onClose,
   booking,
   payment,
-  user
+  user,
 }) => {
   const receiptRef = useRef<HTMLDivElement>(null);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   if (!isOpen) return null;
 
+  // Format Date Only (for rental period)
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Format Date & Time (for the generation timestamp)
+  const formatDateTime = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      weekday: "short",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "KES",
     }).format(amount);
   };
 
-  // Generate QR Code Data
   const qrCodeData = JSON.stringify({
     receiptId: `REC-${payment.payment_id}`,
-    bookingId: booking.booking_id,
-    paymentId: payment.payment_id,
     transactionId: payment.transaction_id,
     amount: payment.net_amount,
     date: payment.payment_date,
-    user: `${user.first_name} ${user.last_name}`
   });
 
-  // Download as PDF
   const downloadAsPDF = async () => {
     if (!receiptRef.current) return;
-    
     setIsGeneratingPDF(true);
     try {
       const canvas = await html2canvas(receiptRef.current, {
-        scale: 2,
-        backgroundColor: '#ffffff',
+        scale: 3,
+        backgroundColor: "#ffffff",
         useCORS: true,
-        logging: false
+        logging: false,
       });
-
-      const imgData = canvas.toDataURL('image/png');
+      const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
       });
-
       const imgWidth = 190;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const xOffset = (210 - imgWidth) / 2; // Center on A4
-      
-      pdf.addImage(imgData, 'PNG', xOffset, 10, imgWidth, imgHeight);
-      pdf.save(`Receipt-${payment.transaction_id}.pdf`);
+      const xOffset = (210 - imgWidth) / 2;
+      pdf.addImage(imgData, "PNG", xOffset, 10, imgWidth, imgHeight);
+      pdf.save(`VansKE-Receipt-${payment.transaction_id}.pdf`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error("Error generating PDF:", error);
     } finally {
       setIsGeneratingPDF(false);
     }
   };
 
-  // Print Receipt
-  const printReceipt = () => {
-    window.print();
-  };
+  const printReceipt = () => window.print();
 
-  // Share Receipt (can be extended for email sharing)
   const shareReceipt = () => {
     if (navigator.share) {
       navigator.share({
-        title: `Payment Receipt - ${payment.transaction_id}`,
+        title: `VansKE Receipt - ${payment.transaction_id}`,
         text: `Payment receipt for booking #${booking.booking_id}`,
         url: window.location.href,
       });
     } else {
-      // Fallback: Copy to clipboard
       navigator.clipboard.writeText(
-        `Payment Receipt\nTransaction: ${payment.transaction_id}\nAmount: ${formatCurrency(payment.net_amount)}`
+        `VansKE Receipt: ${payment.transaction_id}\nAmount: ${formatCurrency(payment.net_amount)}`,
       );
-      alert('Receipt details copied to clipboard!');
+      alert("Receipt details copied to clipboard!");
     }
   };
 
   return (
     <>
       {/* Modal Overlay */}
-      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between p-6 border-b">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Payment Receipt</h2>
-              <p className="text-gray-600">Transaction #{payment.transaction_id}</p>
-            </div>
+      <div className="fixed inset-0 bg-[#001524]/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6">
+        {/* Modal Container */}
+        <div className="bg-[#E9E6DD] rounded-2xl w-full max-w-4xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden border border-[#C4AD9D]/30">
+          {/* Header Actions */}
+          <div className="flex items-center justify-between p-4 bg-white/50 backdrop-blur-sm border-b border-[#C4AD9D]/50">
+            <h2 className="text-xl font-bold text-[#001524] flex items-center gap-2">
+              <Ticket className="w-5 h-5 text-[#027480]" />
+              Transaction:{" "}
+              <span className="font-mono text-[#027480]">
+                {payment.transaction_id}
+              </span>
+            </h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 bg-white hover:bg-[#F57251] hover:text-white rounded-full transition-colors shadow-sm text-[#445048]"
             >
-              <X className="w-6 h-6 text-gray-500" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Modal Content */}
-          <div className="flex-1 overflow-y-auto p-6">
-            {/* Receipt Content - Printable Area */}
-            <div 
-              ref={receiptRef} 
-              className="max-w-3xl mx-auto bg-white p-8 border-2 border-dashed border-gray-200 rounded-xl"
+          {/* Scrollable Area */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-8">
+            {/* --- ACTUAL TICKET (Printable Area) --- */}
+            <div
+              ref={receiptRef}
+              className="receipt-printable max-w-3xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden border border-[#C4AD9D]/30 relative"
             >
-              {/* Receipt Header */}
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                  <CheckCircle className="w-10 h-10 text-green-600" />
-                </div>
-                <h1 className="text-3xl font-bold text-gray-900">Payment Successful!</h1>
-                <p className="text-gray-600 mt-2">Thank you for your payment</p>
-                <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full">
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  <span className="text-green-700 font-semibold">Paid • {formatDate(payment.payment_date)}</span>
-                </div>
-              </div>
+              {/* TICKET HEADER (Now dynamically sizing to its content!) */}
+              <div className="bg-[#001524] px-6 sm:px-8 pt-8 pb-8 flex flex-col sm:flex-row justify-between items-center sm:items-start gap-4 border-b-4 border-[#027480]">
+                <div className="flex items-start gap-4 w-full sm:w-auto">
+                  {/* PERFECTLY ROUNDED LOGO */}
+                  <div className="w-20 h-20 rounded-full bg-white p-1.5 shadow-md border-2 border-[#E9E6DD] shrink-0 flex items-center justify-center overflow-hidden mt-1">
+                    <img
+                      src="/logo.png"
+                      alt="VansKE"
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h1 className="text-3xl font-black text-white tracking-wide">
+                      Vans<span className="text-[#027480]">KE</span>
+                    </h1>
+                    <p className="text-[#C4AD9D] text-sm uppercase tracking-wider font-semibold mb-3">
+                      Car Rental Ticket
+                    </p>
 
-              {/* Company Info */}
-              <div className="text-center mb-8">
-                <div className="inline-block px-6 py-2 bg-gray-900 text-white rounded-full font-bold text-lg">
-                  Vans<span className="text-[#027480]">KE</span>
-                </div>
-                <p className="text-gray-600 mt-2">Vans-Travel-Agency</p>
-                <p className="text-gray-500 text-sm">receipt@vansrental.com • +254 112 178 578</p>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Column - Transaction Details */}
-                <div className="lg:col-span-2 space-y-6">
-                  {/* User & Vehicle Info */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* User Info Card */}
-                    <div className="bg-gray-50 p-5 rounded-xl border">
-                      <div className="flex items-center gap-3 mb-4">
-                        <User className="w-5 h-5 text-gray-600" />
-                        <h3 className="font-bold text-gray-900">Customer Information</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-semibold text-gray-900">
-                          {user.first_name} {user.last_name}
-                        </p>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Mail className="w-4 h-4" />
-                          <span>{user.email}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Phone className="w-4 h-4" />
-                          <span>{user.contact_phone}</span>
-                        </div>
-                        {user.address && (
-                          <div className="flex items-start gap-2 text-sm text-gray-600">
-                            <MapPin className="w-4 h-4 mt-0.5" />
-                            <span>{user.address}</span>
-                          </div>
-                        )}
-                      </div>
+                    {/* NEW: Company Contact Info */}
+                    <div className="text-[#E9E6DD] text-xs space-y-1.5 font-medium">
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-[#F57251] shrink-0" />
+                        <span>+254 112 178 578</span>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-[#F57251] shrink-0" />
+                        <span className="truncate">receipt@vansrental.com</span>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Globe className="w-3.5 h-3.5 text-[#F57251] shrink-0" />
+                        <span className="truncate">
+                          https://vanskecarrental.netlify.app
+                        </span>
+                      </p>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Vehicle Info Card */}
-                    <div className="bg-gray-50 p-5 rounded-xl border">
-                      <div className="flex items-center gap-3 mb-4">
-                        <Car className="w-5 h-5 text-gray-600" />
-                        <h3 className="font-bold text-gray-900">Vehicle Details</h3>
-                      </div>
-                      <div className="space-y-2">
-                        <p className="font-semibold text-gray-900">
-                          {booking.vehicle_manufacturer} {booking.vehicle_model}
+                <div className="text-center sm:text-right mt-4 sm:mt-0 shrink-0">
+                  <p className="text-[#C4AD9D] text-sm font-semibold uppercase mb-1">
+                    Receipt No.
+                  </p>
+                  <p className="text-2xl font-mono font-bold text-white bg-[#027480]/20 px-3 py-1.5 rounded-md border border-[#027480]/50 shadow-inner">
+                    REC-{payment.payment_id}
+                  </p>
+                </div>
+              </div>
+
+              {/*.... ticket body remains the same ... */}
+
+              {/* TICKET BODY */}
+              <div className="p-6 sm:p-8">
+                {/* PAID STAMP & SUMMARY */}
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-[#E9E6DD]/40 rounded-xl p-6 border border-[#C4AD9D]/30 mb-8 relative overflow-hidden">
+                  <CheckCircle className="absolute -right-6 -bottom-6 w-32 h-32 text-[#027480]/5" />
+
+                  <div className="relative z-10">
+                    <p className="text-[#445048] font-semibold mb-1">
+                      Total Amount Paid
+                    </p>
+                    <h2 className="text-4xl font-black text-[#001524]">
+                      {formatCurrency(payment.net_amount)}
+                    </h2>
+                    <p className="text-sm text-[#445048] mt-2 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-[#027480] rounded-full"></span>
+                      {payment.payment_method} •{" "}
+                      {formatDateTime(payment.payment_date)}
+                    </p>
+                  </div>
+
+                  {/* Catchy PAID Stamp */}
+                  <div className="mt-4 sm:mt-0 relative z-10 transform sm:rotate-12">
+                    <div className="border-4 border-[#F57251] text-[#F57251] rounded-lg px-6 py-2 text-2xl font-black tracking-widest uppercase shadow-sm bg-white/80 backdrop-blur-sm">
+                      PAID
+                    </div>
+                  </div>
+                </div>
+
+                {/* INFO GRIDS */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  {/* Customer Info */}
+                  <div>
+                    <h3 className="text-sm font-bold text-[#C4AD9D] uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-[#E9E6DD] pb-2">
+                      <User className="w-4 h-4 text-[#027480]" /> Billed To
+                    </h3>
+                    <p className="font-bold text-lg text-[#001524]">
+                      {user.first_name} {user.last_name}
+                    </p>
+                    <div className="text-[#445048] text-sm mt-2 space-y-1">
+                      <p className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5" /> {user.email}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5" /> {user.contact_phone}
+                      </p>
+                      {user.address && (
+                        <p className="flex items-center gap-2">
+                          <MapPin className="w-3.5 h-3.5" /> {user.address}
                         </p>
-                        <p className="text-sm text-gray-600">Year: {booking.vehicle_year}</p>
-                        {booking.license_plate && (
-                          <p className="text-sm text-gray-600">Plate: {booking.license_plate}</p>
-                        )}
-                        {booking.vin_number && (
-                          <p className="text-sm text-gray-600">VIN: {booking.vin_number}</p>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Rental Period */}
-                  <div className="bg-gray-50 p-5 rounded-xl border">
-                    <div className="flex items-center gap-3 mb-4">
-                      <Calendar className="w-5 h-5 text-gray-600" />
-                      <h3 className="font-bold text-gray-900">Rental Period</h3>
+                  {/* Vehicle Info */}
+                  <div>
+                    <h3 className="text-sm font-bold text-[#C4AD9D] uppercase tracking-wider mb-3 flex items-center gap-2 border-b border-[#E9E6DD] pb-2">
+                      <Car className="w-4 h-4 text-[#027480]" /> Vehicle Details
+                    </h3>
+                    <p className="font-bold text-lg text-[#001524]">
+                      {booking.vehicle_manufacturer} {booking.vehicle_model}
+                    </p>
+                    <div className="text-[#445048] text-sm mt-2 space-y-1">
+                      <p>
+                        Year:{" "}
+                        <span className="font-semibold text-[#001524]">
+                          {booking.vehicle_year}
+                        </span>
+                      </p>
+                      {booking.license_plate && (
+                        <p>
+                          Plate:{" "}
+                          <span className="font-mono bg-[#E9E6DD] px-2 py-0.5 rounded text-[#001524] font-bold">
+                            {booking.license_plate}
+                          </span>
+                        </p>
+                      )}
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  </div>
+                </div>
+
+                {/* DASHED SEPARATOR */}
+                <div className="w-full border-t-2 border-dashed border-[#C4AD9D] my-8 relative">
+                  <div className="absolute -left-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#E9E6DD] rounded-full border-r border-[#C4AD9D]/30"></div>
+                  <div className="absolute -right-10 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#E9E6DD] rounded-full border-l border-[#C4AD9D]/30"></div>
+                </div>
+
+                {/* Timeline & QR */}
+                <div className="flex flex-col md:flex-row justify-between gap-8 items-center">
+                  {/* Timeline */}
+                  <div className="flex-1 w-full bg-[#001524] rounded-xl p-6 text-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-[#027480] to-transparent opacity-30"></div>
+                    <h3 className="flex items-center gap-2 text-[#C4AD9D] text-sm font-bold uppercase mb-4">
+                      <Calendar className="w-4 h-4 text-[#F57251]" /> Rental
+                      Period
+                    </h3>
+                    <div className="flex items-center justify-between relative z-10">
                       <div>
-                        <p className="text-sm text-gray-600">Pick-up Date</p>
-                        <p className="font-semibold text-gray-900">
+                        <p className="text-xs text-[#E9E6DD] mb-1">Pick-up</p>
+                        <p className="font-bold">
                           {formatDate(booking.booking_date)}
                         </p>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Return Date</p>
-                        <p className="font-semibold text-gray-900">
+                      <div className="h-0.5 w-12 bg-[#027480]"></div>
+                      <div className="text-right">
+                        <p className="text-xs text-[#E9E6DD] mb-1">Return</p>
+                        <p className="font-bold">
                           {formatDate(booking.return_date)}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Payment Breakdown */}
-                  <div className="bg-gray-50 p-5 rounded-xl border">
-                    <div className="flex items-center gap-3 mb-4">
-                      <CreditCard className="w-5 h-5 text-gray-600" />
-                      <h3 className="font-bold text-gray-900">Payment Breakdown</h3>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Subtotal</span>
-                        <span className="font-medium">{formatCurrency(booking.total_amount)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-600">Commission Fee</span>
-                        <span className="font-medium">{formatCurrency(payment.commission_fee)}</span>
-                      </div>
-                      <div className="flex justify-between border-t pt-3">
-                        <span className="text-gray-600">Taxes & Fees</span>
-                        <span className="font-medium">
-                          {formatCurrency(payment.gross_amount - booking.total_amount - payment.commission_fee)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-lg font-bold border-t pt-3">
-                        <span className="text-gray-900">Total Paid</span>
-                        <span className="text-[#027480]">{formatCurrency(payment.net_amount)}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - QR Code & Summary */}
-                <div className="space-y-6">
                   {/* QR Code */}
-                  <div className="bg-gray-50 p-6 rounded-xl border text-center">
-                    <h3 className="font-bold text-gray-900 mb-4">Digital Verification</h3>
-                    <div className="flex justify-center">
+                  <div className="flex flex-col items-center justify-center shrink-0">
+                    <div className="p-2 border-2 border-[#E9E6DD] rounded-xl bg-white">
                       <QRCodeSVG
                         value={qrCodeData}
-                        size={180}
-                        level="H"
-                        includeMargin={true}
-                        bgColor="#ffffff"
+                        size={100}
+                        level="M"
                         fgColor="#001524"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-4">
-                      Scan to verify this receipt
+                    <p className="text-[10px] text-[#C4AD9D] mt-2 uppercase font-bold tracking-widest">
+                      Official QR Code
                     </p>
-                    <div className="mt-4 p-3 bg-gray-100 rounded-lg">
-                      <p className="text-xs font-mono text-gray-700 break-all">
-                        {payment.transaction_id}
-                      </p>
-                    </div>
                   </div>
+                </div>
 
-                  {/* Payment Method */}
-                  <div className="bg-gray-50 p-5 rounded-xl border">
-                    <h3 className="font-bold text-gray-900 mb-3">Payment Method</h3>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-6 bg-gray-200 rounded flex items-center justify-center">
-                        {payment.payment_method === 'Credit Card' ? '💳' : '🏦'}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{payment.payment_method}</p>
-                        <p className="text-sm text-gray-600">Payment ID: {payment.payment_id}</p>
-                      </div>
-                    </div>
-                  </div>
-
+                {/* NEW: IMPORTANT NOTES & FOOTER */}
+                <div className="mt-8 pt-6 border-t border-[#E9E6DD] flex flex-col md:flex-row justify-between gap-6">
                   {/* Important Notes */}
-                  <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
-                    <h3 className="font-bold text-gray-900 mb-3">Important Notes</h3>
-                    <ul className="space-y-2 text-sm text-gray-600">
+                  <div className="flex-1">
+                    <h4 className="font-bold text-[#001524] text-sm uppercase tracking-wider mb-2">
+                      Important Notes
+                    </h4>
+                    <ul className="space-y-1.5 text-sm text-[#445048]">
                       <li className="flex items-start gap-2">
-                        <span className="text-blue-500 mt-0.5">•</span>
+                        <span className="text-[#F57251] font-bold mt-0.5">
+                          •
+                        </span>
                         Keep this receipt for your records
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-blue-500 mt-0.5">•</span>
+                        <span className="text-[#F57251] font-bold mt-0.5">
+                          •
+                        </span>
                         Present QR code at pickup if required
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="text-blue-500 mt-0.5">•</span>
+                        <span className="text-[#F57251] font-bold mt-0.5">
+                          •
+                        </span>
                         Contact support for any queries
                       </li>
                     </ul>
                   </div>
+
+                  {/* Disclaimer & Timestamp */}
+                  <div className="flex-1 flex flex-col justify-end text-left md:text-right">
+                    <p className="text-sm text-[#445048] mb-2">
+                      This is an official payment receipt. For any inquiries,
+                      contact our support team.
+                    </p>
+                    <p className="text-xs font-mono text-[#C4AD9D]">
+                      Generated on {formatDateTime(new Date().toISOString())}
+                    </p>
+                  </div>
                 </div>
               </div>
-
-              {/* Footer */}
-              <div className="mt-8 pt-8 border-t text-center">
-                <p className="text-gray-600 text-sm">
-                  This is an official payment receipt. For any inquiries, contact our support team.
-                </p>
-                <p className="text-gray-500 text-xs mt-2">
-                  Generated on {formatDate(new Date().toISOString())}
-                </p>
-              </div>
             </div>
+            {/* --- END ACTUAL TICKET --- */}
           </div>
 
-          {/* Action Buttons */}
-          <div className="border-t p-6 bg-gray-50">
-            <div className="flex flex-wrap gap-3 justify-end">
-              <button
-                onClick={shareReceipt}
-                className="px-5 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Share2 className="w-4 h-4" />
-                Share
-              </button>
-              <button
-                onClick={printReceipt}
-                className="px-5 py-2.5 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-              >
-                <Printer className="w-4 h-4" />
-                Print
-              </button>
-              <button
-                onClick={downloadAsPDF}
-                disabled={isGeneratingPDF}
-                className="px-5 py-2.5 bg-[#027480] text-white rounded-lg font-medium hover:bg-[#02606d] transition-colors flex items-center gap-2 disabled:opacity-50"
-              >
-                <Download className="w-4 h-4" />
-                {isGeneratingPDF ? 'Generating...' : 'Download PDF'}
-              </button>
-            </div>
+          {/* Action Buttons Footer */}
+          <div className="p-4 sm:p-6 bg-white border-t border-[#C4AD9D]/30 flex flex-wrap gap-3 justify-end items-center">
+            <button
+              onClick={shareReceipt}
+              className="px-4 py-2 border-2 border-[#E9E6DD] rounded-lg font-bold text-[#001524] hover:border-[#027480] hover:text-[#027480] transition-colors flex items-center gap-2"
+            >
+              <Share2 className="w-4 h-4" /> Share
+            </button>
+            <button
+              onClick={printReceipt}
+              className="px-4 py-2 border-2 border-[#E9E6DD] rounded-lg font-bold text-[#001524] hover:border-[#027480] hover:text-[#027480] transition-colors flex items-center gap-2"
+            >
+              <Printer className="w-4 h-4" /> Print
+            </button>
+            <button
+              onClick={downloadAsPDF}
+              disabled={isGeneratingPDF}
+              className="px-6 py-2 bg-[#027480] text-white rounded-lg font-bold hover:bg-[#001524] transition-colors flex items-center gap-2 shadow-md disabled:opacity-70"
+            >
+              <Download className="w-4 h-4" />
+              {isGeneratingPDF ? "Generating..." : "Download Ticket"}
+            </button>
           </div>
         </div>
       </div>
@@ -403,8 +427,17 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
       <style>
         {`
           @media print {
+            body {
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
             body * {
               visibility: hidden;
+            }
+            .fixed.inset-0 {
+                background: transparent !important;
+                position: absolute;
             }
             .receipt-printable,
             .receipt-printable * {
@@ -415,10 +448,10 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
               left: 0;
               top: 0;
               width: 100%;
-              padding: 20px;
-            }
-            .no-print {
-              display: none !important;
+              margin: 0;
+              padding: 0;
+              border: none !important;
+              box-shadow: none !important;
             }
           }
         `}

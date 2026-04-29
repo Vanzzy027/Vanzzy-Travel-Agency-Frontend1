@@ -1,4 +1,4 @@
-import { jsx as _jsx, Fragment as _Fragment } from "react/jsx-runtime";
+import { jsx as _jsx, Fragment as _Fragment, jsxs as _jsxs } from "react/jsx-runtime";
 import { RouterProvider, createBrowserRouter, Navigate, } from "react-router-dom";
 import { useSelector } from "react-redux";
 // --- LAYOUTS ---
@@ -33,6 +33,9 @@ import AdminPayments from "./pages/AdminPage/AdminPayments";
 import AdminSupportPage from "./pages/AdminPage/AdminSupportPage";
 import AdminReviewsPage from "./pages/AdminPage/AdminReviewsPage";
 import ReceiptPage from "./pages/ReceiptPage";
+// Toast
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // --- AUTH GUARD ---
 const ProtectedRoute = ({ children, allowedRoles, }) => {
     const { token, user } = useSelector((state) => state.auth) || {
@@ -115,6 +118,6 @@ function App() {
             element: _jsx(Navigate, { to: "/", replace: true }),
         },
     ]);
-    return _jsx(RouterProvider, { router: router });
+    return (_jsxs(_Fragment, { children: [_jsx(ToastContainer, { position: "top-right", autoClose: 3000 }), _jsx(RouterProvider, { router: router })] }));
 }
 export default App;

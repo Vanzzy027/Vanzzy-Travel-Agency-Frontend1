@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Shield, X, CreditCard, Smartphone, ArrowLeft, Loader2, CheckCircle, AlertCircle, Fuel, Settings, Users, Gauge, ShieldCheck, Calendar, Car, } from "lucide-react";
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
 const PaymentModal = ({ isOpen, onClose, onSuccess, bookingData, userData, vehicleDetails, }) => {
     const navigate = useNavigate();
     const modalRef = useRef(null);
@@ -259,7 +260,7 @@ const PaymentModal = ({ isOpen, onClose, onSuccess, bookingData, userData, vehic
             // Save payment details for UI
             setPaymentDetails(response);
             // Call backend payment endpoint
-            const backendResponse = await fetch(`${import.meta.env.VITE_API_URL}/api/payments/initialize`, {
+            const backendResponse = await fetch(`${API_BASE_URL}/api/payments/initialize`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

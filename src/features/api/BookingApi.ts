@@ -1,7 +1,7 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-//import { type InitializePaymentRequest } from '../../types/types';
-// 1. INTERFACES
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "./baseQuery";
 
+// 1. INTERFACES (Keep all your interfaces exactly as they were)
 export interface BookingDetail {
   booking_id: number;
   user_id: string;
@@ -148,70 +148,53 @@ export interface ChatResponse {
   actionPerformed?: string;
   functionResult?: any;
 }
+
+// --- HELPER FUNCTION FOR PARSING IMAGES ---
+// This saves us from copying and pasting the same 15 lines of code 3 times!
+const transformBookingData = (booking: any) => {
+  let parsedImages = [];
+
+  if (Array.isArray(booking.vehicle_images)) {
+    parsedImages = booking.vehicle_images;
+  } else if (typeof booking.vehicle_images === "string") {
+    try {
+      const parsed = JSON.parse(booking.vehicle_images);
+      parsedImages = Array.isArray(parsed)
+        ? parsed
+        : booking.vehicle_images.split(",").map((img: string) => img.trim());
+    } catch {
+      parsedImages = booking.vehicle_images
+        .split(",")
+        .map((img: string) => img.trim());
+    }
+  }
+
+  return {
+    ...booking,
+    status: booking.booking_status, // Normalize status
+    vehicle_images: parsedImages, // Normalize images
+  };
+};
+
 // 2. API DEFINITION
-
-const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
-
 export const bookingApi = createApi({
   reducerPath: "bookingApi",
-  baseQuery: fetchBaseQuery({
-    // Base URL for ALL endpoints
-    baseUrl: `${API_BASE_URL}/api`,
-    prepareHeaders: (headers, { getState }) => {
-      // Get token from Redux state or localStorage
-      const token =
-        (getState() as any)?.auth?.token || localStorage.getItem("token");
 
-      if (token) {
-        headers.set("Authorization", `Bearer ${token}`);
-      }
-      headers.set("Content-Type", "application/json");
-      return headers;
-    },
-  }),
+  // 🚨 USE YOUR CUSTOM BASE QUERY HERE!
+  baseQuery: baseQueryWithReauth,
 
-  // Add 'Payment' to tagTypes
   tagTypes: ["Booking", "Payment"],
 
   endpoints: (builder) => ({
     // --- BOOKING ENDPOINTS ---
-
     getAllBookings: builder.query<BookingDetail[], void>({
       query: () => "/bookings",
-
       transformResponse: (response: any) => {
         const rawData = Array.isArray(response)
           ? response
           : response?.data || [];
-
-        return rawData.map((b: any) => ({
-          ...b,
-
-          // ✅ normalize status
-          status: b.booking_status,
-
-          // ✅ normalize images (ALWAYS array)
-          vehicle_images: Array.isArray(b.vehicle_images)
-            ? b.vehicle_images
-            : typeof b.vehicle_images === "string"
-              ? (() => {
-                  try {
-                    const parsed = JSON.parse(b.vehicle_images);
-                    return Array.isArray(parsed)
-                      ? parsed
-                      : b.vehicle_images
-                          .split(",")
-                          .map((img: string) => img.trim());
-                  } catch {
-                    return b.vehicle_images
-                      .split(",")
-                      .map((img: string) => img.trim());
-                  }
-                })()
-              : [],
-        }));
+        return rawData.map(transformBookingData); // 🔥 Much cleaner!
       },
-
       providesTags: (result) =>
         result
           ? [
@@ -226,40 +209,12 @@ export const bookingApi = createApi({
 
     getUserBookings: builder.query<BookingDetail[], void>({
       query: () => "/bookings/my-bookings",
-
       transformResponse: (response: any) => {
         const rawData = Array.isArray(response)
           ? response
           : response?.data || [];
-
-        return rawData.map((b: any) => ({
-          ...b,
-
-          // ✅ normalize status
-          status: b.booking_status,
-
-          // ✅ normalize images
-          vehicle_images: Array.isArray(b.vehicle_images)
-            ? b.vehicle_images
-            : typeof b.vehicle_images === "string"
-              ? (() => {
-                  try {
-                    const parsed = JSON.parse(b.vehicle_images);
-                    return Array.isArray(parsed)
-                      ? parsed
-                      : b.vehicle_images
-                          .split(",")
-                          .map((img: string) => img.trim());
-                  } catch {
-                    return b.vehicle_images
-                      .split(",")
-                      .map((img: string) => img.trim());
-                  }
-                })()
-              : [],
-        }));
+        return rawData.map(transformBookingData); // 🔥 Much cleaner!
       },
-
       providesTags: (result) =>
         result
           ? [
@@ -274,99 +229,12 @@ export const bookingApi = createApi({
 
     getBookingById: builder.query<BookingDetail, number>({
       query: (id) => `/bookings/${id}`,
-
       transformResponse: (response: any) => {
         const booking = response?.data || response;
-
-        return {
-          ...booking,
-
-          // ✅ normalize status
-          status: booking.booking_status,
-
-          // ✅ normalize images
-          vehicle_images: Array.isArray(booking.vehicle_images)
-            ? booking.vehicle_images
-            : typeof booking.vehicle_images === "string"
-              ? (() => {
-                  try {
-                    const parsed = JSON.parse(booking.vehicle_images);
-                    return Array.isArray(parsed)
-                      ? parsed
-                      : booking.vehicle_images
-                          .split(",")
-                          .map((img: string) => img.trim());
-                  } catch {
-                    return booking.vehicle_images
-                      .split(",")
-                      .map((img: string) => img.trim());
-                  }
-                })()
-              : [],
-        };
+        return transformBookingData(booking); // 🔥 Much cleaner!
       },
-
       providesTags: (_result, _error, id) => [{ type: "Booking", id }],
     }),
-
-    // getAllBookings: builder.query<BookingDetail[], void>({
-    //   query: () => "/bookings",
-    //   transformResponse: (response: any) => {
-    //     const rawData = Array.isArray(response)
-    //       ? response
-    //       : response?.data || [];
-    //     // Map backend 'booking_status' to frontend 'status'
-    //     return rawData.map((b: any) => ({
-    //       ...b,
-    //       status: b.booking_status,
-    //     }));
-    //   },
-    //   providesTags: (result) =>
-    //     result
-    //       ? [
-    //           ...result.map(({ booking_id }) => ({
-    //             type: "Booking" as const,
-    //             id: booking_id,
-    //           })),
-    //           { type: "Booking", id: "LIST" },
-    //         ]
-    //       : [{ type: "Booking", id: "LIST" }],
-    // }),
-
-    // getUserBookings: builder.query<BookingDetail[], void>({
-    //   query: () => "/bookings/my-bookings",
-    //   transformResponse: (response: any) => {
-    //     const rawData = Array.isArray(response)
-    //       ? response
-    //       : response?.data || [];
-    //     return rawData.map((b: any) => ({
-    //       ...b,
-    //       status: b.booking_status,
-    //     }));
-    //   },
-    //   providesTags: (result) =>
-    //     result
-    //       ? [
-    //           ...result.map(({ booking_id }) => ({
-    //             type: "Booking" as const,
-    //             id: booking_id,
-    //           })),
-    //           { type: "Booking", id: "LIST" },
-    //         ]
-    //       : [{ type: "Booking", id: "LIST" }],
-    // }),
-
-    // getBookingById: builder.query<BookingDetail, number>({
-    //   query: (id) => `/bookings/${id}`,
-    //   transformResponse: (response: any) => {
-    //     const booking = response.data || response;
-    //     return {
-    //       ...booking,
-    //       status: booking.booking_status,
-    //     };
-    //   },
-    //   providesTags: (_result, _error, id) => [{ type: "Booking", id }],
-    // }),
 
     createBooking: builder.mutation<BookingDetail, CreateBookingRequest>({
       query: (body) => ({
@@ -392,12 +260,11 @@ export const bookingApi = createApi({
       ],
     }),
 
-    // ✅ 1. Status Update
     updateBookingStatus: builder.mutation<void, { id: number; status: string }>(
       {
         query: ({ id, status }) => ({
-          url: `/bookings/${id}/status`, // Matches route /:id/status
-          method: "PATCH", // Matches route method
+          url: `/bookings/${id}/status`,
+          method: "PATCH",
           body: { booking_status: status },
         }),
         invalidatesTags: (_result, _error, { id }) => [
@@ -407,7 +274,6 @@ export const bookingApi = createApi({
       },
     ),
 
-    // ✅ 2. Complete Booking
     completeBooking: builder.mutation<
       BookingCompletionResponse,
       { id: number; return_date: string; end_mileage: number }
@@ -420,19 +286,26 @@ export const bookingApi = createApi({
           end_mileage: body.end_mileage,
         },
       }),
-      invalidatesTags: ["Booking"],
+      // 🔥 Improved to not over-fetch data
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: "Booking", id },
+        { type: "Booking", id: "LIST" },
+      ],
     }),
 
-    // ✅ 3. Cancel Booking
     cancelBooking: builder.mutation<void, number>({
       query: (id) => ({
         url: `/bookings/${id}/cancel`,
         method: "PATCH",
       }),
-      invalidatesTags: ["Booking"],
+      // 🔥 Improved to not over-fetch data
+      invalidatesTags: (_result, _error, id) => [
+        { type: "Booking", id },
+        { type: "Booking", id: "LIST" },
+      ],
     }),
 
-    // ✅ NEW: Payment Processing Endpoint (using new service)
+    // --- PAYMENT ENDPOINTS ---
     processPayment: builder.mutation<PaymentResponse, InitializePaymentRequest>(
       {
         query: (body) => ({
@@ -444,7 +317,6 @@ export const bookingApi = createApi({
       },
     ),
 
-    // ✅ NEW: Payment Verification Endpoint
     verifyPayment: builder.mutation<PaymentResponse, VerifyPaymentRequest>({
       query: (body) => ({
         url: `/payments/verify`,
@@ -457,7 +329,6 @@ export const bookingApi = createApi({
       ],
     }),
 
-    // ✅ NEW: Get Payment by Booking ID
     getPaymentByBookingId: builder.query<any, number>({
       query: (bookingId) => `/payments/booking/${bookingId}`,
       providesTags: (_result, _error, bookingId) => [
@@ -465,7 +336,6 @@ export const bookingApi = createApi({
       ],
     }),
 
-    // ✅ OLD: Legacy Payment Endpoint (for backward compatibility)
     initializePayment: builder.mutation<PaymentResponse, any>({
       query: (data) => ({
         url: "/payments/initialize",
@@ -475,17 +345,15 @@ export const bookingApi = createApi({
       invalidatesTags: [{ type: "Booking", id: "LIST" }],
     }),
 
-    // ✅ OLD: Process Payment (legacy endpoint - if you still need it)
     processPaymentLegacy: builder.mutation<void, ProcessPaymentRequest>({
       query: (body) => ({
-        url: "/bookings/payments/process", // Old endpoint
+        url: "/bookings/payments/process",
         method: "POST",
         body,
       }),
       invalidatesTags: [{ type: "Booking", id: "LIST" }],
     }),
 
-    //Receipt
     getReceipt: builder.query({
       query: ({ bookingId, paymentId }) => ({
         url: paymentId
@@ -495,22 +363,10 @@ export const bookingApi = createApi({
       }),
     }),
 
-    // AI chat
-    // sendChatMessage: builder.mutation<{ reply: string; actionPerformed?: string }, { message: string; history: any[]; userId: string }>({
-    //   query: (body) => ({
-    //     url: '/chat', //backend url
-    //     method: 'POST',
-    //     body,
-    //   }),
-    // }),
-
+    // --- AI CHAT ---
     sendChatMessage: builder.mutation<
       ChatResponse,
-      {
-        message: string;
-        history: ChatMessage[];
-        userId: string | number;
-      }
+      { message: string; history: ChatMessage[]; userId: string | number }
     >({
       query: (body) => ({
         url: "/chat",
@@ -522,7 +378,6 @@ export const bookingApi = createApi({
 });
 
 // 3. EXPORTS
-
 export const {
   useGetAllBookingsQuery,
   useGetUserBookingsQuery,
@@ -532,9 +387,7 @@ export const {
   useUpdateBookingMutation,
   useCompleteBookingMutation,
   useCancelBookingMutation,
-  useSendChatMessageMutation, //chat ai
-
-  // Payment endpoints
+  useSendChatMessageMutation,
   useProcessPaymentMutation,
   useVerifyPaymentMutation,
   useGetPaymentByBookingIdQuery,

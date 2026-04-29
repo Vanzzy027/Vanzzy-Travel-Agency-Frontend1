@@ -1,4 +1,5 @@
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { createApi } from "@reduxjs/toolkit/query/react";
+import { baseQueryWithReauth } from "./baseQuery";
 
 interface LoginRequest {
   email: string;
@@ -51,31 +52,20 @@ interface ResetPasswordResponse {
   message: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
-
 export const AuthApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: `${API_BASE_URL}/api/auth/`,
-    prepareHeaders: (headers) => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        headers.set("authorization", `Bearer ${token}`);
-      }
-      return headers;
-    },
-  }),
+  baseQuery: baseQueryWithReauth,
   endpoints: (builder) => ({
     login: builder.mutation<LoginResponse, LoginRequest>({
       query: (credentials) => ({
-        url: "login",
+        url: "auth/login", // 👈 Added auth/
         method: "POST",
         body: credentials,
       }),
     }),
     register: builder.mutation({
       query: (userData) => ({
-        url: "register",
+        url: "auth/register", // 👈 Added auth/
         method: "POST",
         body: userData,
       }),
@@ -85,14 +75,14 @@ export const AuthApi = createApi({
       ForgotPasswordRequest
     >({
       query: (emailData) => ({
-        url: "forgot-password",
+        url: "auth/forgot-password", // 👈 Added auth/
         method: "POST",
         body: emailData,
       }),
     }),
     verifyOTP: builder.mutation<VerifyOTPResponse, VerifyOTPRequest>({
       query: (otpData) => ({
-        url: "verify-otp",
+        url: "auth/verify-otp", // 👈 Added auth/
         method: "POST",
         body: otpData,
       }),
@@ -102,7 +92,7 @@ export const AuthApi = createApi({
       ResetPasswordRequest
     >({
       query: (resetData) => ({
-        url: "reset-password",
+        url: "auth/reset-password", // 👈 Added auth/
         method: "POST",
         body: resetData,
       }),

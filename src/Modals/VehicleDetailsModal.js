@@ -4,6 +4,8 @@ import { useCreateBookingMutation } from "../features/api/BookingApi";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Car, Fuel, Settings, Users, Gauge, Shield, Calendar, MapPin, CheckCircle, Clock, CreditCard, Zap, Star, ShieldCheck, Wrench, AlertCircle, X, } from "lucide-react";
+const API_BASE_URL = import.meta.env.VITE_API_URL; // Consistent with API
+//baseUrl: `${API_BASE_URL}/api`,
 const VehicleDetailsModal = ({ vehicleId, onClose, vehicleData, }) => {
     const [selectedTab, setSelectedTab] = useState("details");
     const navigate = useNavigate();
@@ -60,7 +62,7 @@ const VehicleDetailsModal = ({ vehicleId, onClose, vehicleData, }) => {
                     }
                 }
                 // If not found, fetch from API
-                const response = await fetch(`${import.meta.env.VITE_API_URL}/api/vehicles/${vehicleId}`);
+                const response = await fetch(`${API_BASE_URL}/api/vehicles/${vehicleId}`);
                 if (response.ok) {
                     const data = await response.json();
                     setVehicle(data.data || data);

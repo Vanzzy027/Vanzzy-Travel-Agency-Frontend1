@@ -41,6 +41,10 @@ import AdminSupportPage from "./pages/AdminPage/AdminSupportPage";
 import AdminReviewsPage from "./pages/AdminPage/AdminReviewsPage";
 import ReceiptPage from "./pages/ReceiptPage";
 
+// Toast
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
 // --- AUTH GUARD ---
 const ProtectedRoute = ({
   children,
@@ -150,7 +154,12 @@ function App() {
     },
   ]);
 
-  return <RouterProvider router={router} />;
+  return (
+    <>
+      <ToastContainer position="top-right" autoClose={3000} />
+      <RouterProvider router={router} />
+    </>
+  );
 }
 
 export default App;
