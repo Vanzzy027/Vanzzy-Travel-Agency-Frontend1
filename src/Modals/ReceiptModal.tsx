@@ -574,7 +574,7 @@ const ReceiptModal: React.FC<ReceiptModalProps> = ({
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-[#F57251] font-bold mt-0.5">•</span>{" "}
-                      Present QR code at pickup if required
+                      Present QR code for scan at pickup if required
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-[#F57251] font-bold mt-0.5">•</span>{" "}
