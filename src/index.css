@@ -1,4 +1,6 @@
 @import "tailwindcss";
+
+/* 2. Proper Tailwind v4 DaisyUI Plugin Loading */
 @plugin "daisyui" {
   themes:
     light --default,
@@ -6,11 +8,29 @@
     retro,
     aqua,
     cyberpunk;
-  @tailwind base;
-  @tailwind components;
-  @tailwind utilities;
+}
 
-  .font-cursive {
-    font-family: "Great Vibes", cursive;
-  }
+/* 3. Custom Application Classes */
+.font-cursive {
+  font-family: "Great Vibes", cursive;
+}
+
+/* index.css */
+/* Override any hidden or misplaced Paystack iframe */
+div.paystack-popup,
+div[data-paystack-popup],
+iframe[name^="paystack-"] {
+  z-index: 2147483647 !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Sometimes Paystack wraps the iframe in a div with an ID like "paystack-modal" */
+#paystack-modal {
+  z-index: 2147483647 !important;
 }

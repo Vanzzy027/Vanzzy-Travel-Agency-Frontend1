@@ -1,75 +1,13 @@
-// import { createApi } from "@reduxjs/toolkit/query/react";
-// import { baseQueryWithReauth } from "./baseQuery";
-// // Types
-// export interface Ticket {
-//   ticket_id: number;
-//   user_id: string;
-//   subject: string;
-//   category: string;
-//   priority: "Low" | "Medium" | "High";
-//   description: string;
-//   status: "Open" | "In Progress" | "Resolved" | "Closed";
-//   admin_response?: string;
-//   created_at: string;
-//   updated_at: string;
-//   full_name?: string;
-//   email?: string;
-// }
-// export interface UpdateTicketPayload {
-//   ticket_id: number;
-//   status: string;
-//   admin_response: string;
-// }
-// // API
-// export const ticketApi = createApi({
-//   reducerPath: "ticketApi",
-//   // ✅ USE YOUR CUSTOM BASE QUERY
-//   baseQuery: baseQueryWithReauth,
-//   tagTypes: ["Tickets", "AdminTickets"],
-//   endpoints: (builder) => ({
-//     getUserTickets: builder.query<Ticket[], string>({
-//       query: (userId) => `/tickets/user/${userId}`,
-//       providesTags: ["Tickets"],
-//     }),
-//     createTicket: builder.mutation<void, Partial<Ticket>>({
-//       query: (body) => ({
-//         url: "/tickets",
-//         method: "POST",
-//         body,
-//       }),
-//       invalidatesTags: ["Tickets", "AdminTickets"],
-//     }),
-//     getAllTickets: builder.query<Ticket[], void>({
-//       query: () => "/tickets",
-//       providesTags: ["AdminTickets"],
-//     }),
-//     updateTicketStatus: builder.mutation<void, UpdateTicketPayload>({
-//       query: ({ ticket_id, ...body }) => ({
-//         url: `/tickets/${ticket_id}`,
-//         method: "PUT",
-//         body,
-//       }),
-//       invalidatesTags: ["AdminTickets", "Tickets"],
-//     }),
-//   }),
-// });
-// export const {
-//   useGetUserTicketsQuery,
-//   useCreateTicketMutation,
-//   useGetAllTicketsQuery,
-//   useUpdateTicketStatusMutation,
-// } = ticketApi;
 import { createApi } from "@reduxjs/toolkit/query/react";
 import { baseQueryWithReauth } from "./baseQuery";
 // API
 export const ticketApi = createApi({
     reducerPath: "ticketApi",
-    // ✅ Perfectly implemented!
+    //  Perfectly implemented!
     baseQuery: baseQueryWithReauth,
     tagTypes: ["Tickets", "AdminTickets"],
     endpoints: (builder) => ({
         getUserTickets: builder.query({
-            // Removed leading slash for consistency
             query: (userId) => `tickets/user/${userId}`,
             providesTags: (result) => result
                 ? [
@@ -83,7 +21,7 @@ export const ticketApi = createApi({
         }),
         createTicket: builder.mutation({
             query: (body) => ({
-                url: "tickets", // Removed leading slash
+                url: "tickets",
                 method: "POST",
                 body,
             }),
@@ -94,7 +32,7 @@ export const ticketApi = createApi({
             ],
         }),
         getAllTickets: builder.query({
-            query: () => "tickets", // Removed leading slash
+            query: () => "tickets",
             providesTags: (result) => result
                 ? [
                     ...result.map(({ ticket_id }) => ({
@@ -107,7 +45,7 @@ export const ticketApi = createApi({
         }),
         updateTicketStatus: builder.mutation({
             query: ({ ticket_id, ...body }) => ({
-                url: `tickets/${ticket_id}`, // Removed leading slash
+                url: `tickets/${ticket_id}`,
                 method: "PUT",
                 body,
             }),
